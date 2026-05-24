@@ -8,9 +8,9 @@
  * attribute, so the *same Tailwind class* renders differently depending
  * on which surface a component lives inside:
  *
- *   <div data-skin="posthog">…</div>   ← default sidebar (cream + white cards)
- *   <div data-skin="cursor">…</div>    ← live meeting copilot
- *   <div data-skin="spotify">…</div>   ← post-call insights
+ *   <div data-skin="brand">…</div>   ← default sidebar (cream + white cards)
+ *   <div data-skin="live">…</div>    ← live meeting copilot
+ *   <div data-skin="insights">…</div>   ← post-call insights
  *   <div data-skin="linear">…</div>    ← popup
  *   <div data-skin="vercel">…</div>    ← transponder + landing body
  *   <div data-skin="spacex">…</div>    ← landing hero band

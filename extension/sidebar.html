@@ -13,10 +13,17 @@
     Multi-skin type stack:
       Inter Variable — primary sans (substitute for Geist, CursorGothic,
                         SpotifyMixUI, D-DIN-Bold across all six skins)
-      JetBrains Mono — eyebrow / code / meta (matches PostHog IBM Plex
-                        Mono, Cursor's JetBrains Mono, Vercel's Geist Mono)
+      JetBrains Mono — eyebrow / code / meta
       Space Grotesk  — kept as V1 fallback so legacy components don't
                         shift if the variable font fails to load
+
+    Google Fonts is loaded from fonts.googleapis.com / fonts.gstatic.com.
+    Default MV3 CSP for extension_pages permits external stylesheets, so
+    this works in standard Chrome installs. If Google Fonts is blocked
+    (corporate proxy, strict CSP, offline use), the type stack degrades
+    gracefully to system-ui / -apple-system / Segoe UI via the fallback
+    chain in tailwind.config.js + index.css. The page remains usable;
+    only the type cut shifts.
   -->
   <link
     rel="stylesheet"

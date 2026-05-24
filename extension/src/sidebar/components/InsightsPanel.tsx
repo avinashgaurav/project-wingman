@@ -20,8 +20,10 @@ interface CallSummary {
   outcome: "won" | "next-step" | "follow-up" | "stalled";
 }
 
-// Mock data — replace with `usePostCallStore()` selector when persistence
-// is wired.
+// TODO(post-call-persistence): replace MOCK_CALLS with a real
+// usePostCallStore() selector once post-call summaries are persisted.
+// Until then, the Insights tab is gated behind VITE_ENABLE_INSIGHTS so
+// default installs don't see fabricated call history.
 const MOCK_CALLS: CallSummary[] = [
   {
     id: "c-1",
@@ -285,6 +287,37 @@ export function InsightsPanel() {
 
   return (
     <div className="space-y-3">
+      {/* Demo data banner — visible while the persistence layer is unwired
+          so previewers know the numbers below are illustrative. */}
+      <div
+        className="px-3 py-2 flex items-center gap-2"
+        style={{
+          background: "var(--surface-2)",
+          border: "1px solid var(--line)",
+          borderLeft: "3px solid var(--signal-warn)",
+          color: "var(--ink-3)",
+          fontSize: 11,
+          borderRadius: 4,
+        }}
+      >
+        <span
+          className="font-mono"
+          style={{
+            fontSize: 9,
+            fontWeight: 700,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: "var(--signal-warn)",
+          }}
+        >
+          Demo
+        </span>
+        <span>
+          Showing example call data. Real post-call summaries appear here once
+          the persistence layer ships.
+        </span>
+      </div>
+
       {/* Eyebrow + hero */}
       <div>
         <div className="eyebrow mb-1">This Week</div>
@@ -332,8 +365,12 @@ export function InsightsPanel() {
         <div className="flex items-center justify-between mb-2">
           <div className="eyebrow">Recent calls</div>
           <button
-            className="text-[11px] font-semibold"
-            style={{ color: "var(--signal-live)" }}
+            type="button"
+            disabled
+            aria-label="See all calls (coming soon)"
+            title="Coming soon — wired with the post-call persistence layer"
+            className="text-[11px] font-semibold cursor-not-allowed"
+            style={{ color: "var(--signal-live)", opacity: 0.5 }}
           >
             See all →
           </button>

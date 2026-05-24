@@ -9,17 +9,17 @@
  *
  * Six skins are defined, one per surface in the revamp:
  *
- *   data-skin="posthog"   → default sidebar chrome (pitch / KB / settings)
+ *   data-skin="brand"   → default sidebar chrome (pitch / KB / settings)
  *                            playful-but-dense PostHog: warm cream canvas,
  *                            white cards, pastel callout banners
  *
- *   data-skin="cursor"    → Live Meeting Copilot panel
+ *   data-skin="live"    → Live Meeting Copilot panel
  *                            cursor's marketing canvas (warm cream + orange)
  *                            plus the timeline-pastel palette for AI agent
  *                            stages (peach=thinking, mint=grep, blue=read,
  *                            lavender=edit, gold=done)
  *
- *   data-skin="spotify"   → Post-call Insights / call history
+ *   data-skin="insights"   → Post-call Insights / call history
  *                            near-black surface ladder + spotify green,
  *                            heavy shadows on elevation, pill geometry
  *
@@ -55,11 +55,11 @@
 /* ===================================================================
  * BASE / DEFAULT — PostHog skin
  * ===================================================================
- * The default skin (no data-skin attribute or data-skin="posthog").
+ * The default skin (no data-skin attribute or data-skin="brand").
  * Playful-but-dense. Warm cream canvas. White cards. Uppercase eyebrows.
  */
 :root,
-[data-skin="posthog"] {
+[data-skin="brand"] {
   /* Brand mark — Wingman orange, persistent across every skin */
   --brand-orange: #F58549;
   --brand-orange-hover: #E07539;
@@ -119,7 +119,7 @@
  *   timeline-lavender → Objection Council (the "editing response" stage)
  *   timeline-gold     → Council Validator (the "done / verified" stage)
  */
-[data-skin="cursor"] {
+[data-skin="live"] {
   --brand-orange: #F58549;
   --brand-orange-hover: #E07539;
   --brand-orange-press: #C66224;
@@ -173,7 +173,7 @@
  * Pill geometry. Heavy shadows on elevation. Album-grid metaphor →
  * call-history grid.
  */
-[data-skin="spotify"] {
+[data-skin="insights"] {
   --brand-orange: #F58549;
   --brand-orange-hover: #FFA070;
   --brand-orange-press: #C66224;
@@ -380,7 +380,11 @@
   color: var(--ink-4);
 }
 
-/* Signal-light dot — for live agent indicators (Cursor/Spotify skins) */
+/* Signal-light dot — for live agent indicators (live/insights skins).
+ * Uses color-mix() for the translucent halo (Chrome 111+, March 2023).
+ * Chrome extensions ride Chrome's auto-update so this is fine; if you're
+ * porting these tokens to a non-extension surface with older browser
+ * support, swap to an rgba() with the channel pre-mixed. */
 .signal-dot {
   display: inline-block;
   width: 8px;
@@ -421,10 +425,10 @@
 }
 
 /* Spotify play-tile hover scale — for Insights tiles */
-.tile-spotify {
+.tile-album {
   transition: transform 200ms ease, background-color 200ms ease;
 }
-.tile-spotify:hover {
+.tile-album:hover {
   transform: translateY(-2px);
   background-color: var(--surface-2);
 }

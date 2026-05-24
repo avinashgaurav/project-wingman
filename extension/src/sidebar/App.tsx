@@ -16,10 +16,16 @@ import { OnboardingChecklist } from "./components/OnboardingChecklist";
 import { ErrorBanner } from "./components/ErrorBanner";
 import { InsightsPanel } from "./components/InsightsPanel";
 import { isMeetingCopilotEnabled } from "../shared/meeting-copilot/feature-flag";
+import { isInsightsPanelEnabled } from "../shared/feature-flags";
 import { listKB } from "../shared/utils/kb-storage";
 import { FileText, BookOpen, Radio, BarChart3 } from "lucide-react";
 
 type AdminTab = "form" | "kb" | "copilot" | "insights";
+
+// Skin keys are named after the *surface intent*, not the design-md they
+// were inspired by. The visual lineage lives in tokens.css comments; the
+// data-skin attribute exposed to the DOM stays product-oriented.
+type SkinKey = "brand" | "live" | "insights";
 
 interface TabDef {
   id: AdminTab;
@@ -27,8 +33,8 @@ interface TabDef {
   icon: React.ReactNode;
   activeBg: string;
   activeText: string;
-  /** Which design-md skin powers this tab's content area. */
-  skin: "posthog" | "cursor" | "spotify" | "vercel" | "linear" | "spacex";
+  /** Which surface palette powers this tab's content. */
+  skin: SkinKey;
 }
 
 export default function App() {
@@ -57,6 +63,9 @@ export default function App() {
 
   const hasKBAccess = user.role === "admin" || user.role === "pmm" || user.role === "designer";
   const copilotOn = isMeetingCopilotEnabled();
+  // Insights tab is gated behind VITE_ENABLE_INSIGHTS — the panel renders
+  // mock call history today, so we don't surface it to default installs.
+  const insightsOn = isInsightsPanelEnabled();
 
   const tabs: TabDef[] = [
     {
@@ -65,7 +74,7 @@ export default function App() {
       icon: <FileText size={12} />,
       activeBg: "bg-orange",
       activeText: "text-black",
-      skin: "posthog",
+      skin: "brand",
     },
     ...(hasKBAccess
       ? [
@@ -75,7 +84,7 @@ export default function App() {
             icon: <BookOpen size={12} />,
             activeBg: "bg-orange",
             activeText: "text-black",
-            skin: "posthog" as const,
+            skin: "brand" as const,
           },
         ]
       : []),
@@ -87,18 +96,22 @@ export default function App() {
             icon: <Radio size={12} />,
             activeBg: "bg-orange",
             activeText: "text-black",
-            skin: "cursor" as const,
+            skin: "live" as const,
           },
         ]
       : []),
-    {
-      id: "insights",
-      label: "Insights",
-      icon: <BarChart3 size={12} />,
-      activeBg: "bg-orange",
-      activeText: "text-black",
-      skin: "spotify",
-    },
+    ...(insightsOn
+      ? [
+          {
+            id: "insights" as const,
+            label: "Insights",
+            icon: <BarChart3 size={12} />,
+            activeBg: "bg-orange",
+            activeText: "text-black",
+            skin: "insights" as const,
+          },
+        ]
+      : []),
   ];
   const showTabs = tabs.length > 1;
 
@@ -106,10 +119,10 @@ export default function App() {
   const activeSkin = activeTab.skin;
 
   return (
-    // Outer chrome uses PostHog (the default) — header, tab strip, error banner.
-    // The active panel below swaps its data-skin per the active tab.
+    // Outer chrome uses the brand skin — header, tab strip, error banner.
+    // Active panel below swaps its data-skin per the active tab.
     <div
-      data-skin="posthog"
+      data-skin="brand"
       className="flex flex-col h-screen text-sm overflow-hidden font-sans"
       style={{ background: "var(--surface-0)", color: "var(--ink)" }}
     >
@@ -191,7 +204,7 @@ export default function App() {
 
         {copilotOn && adminTab === "copilot" && <MeetingCopilotPanel />}
 
-        {adminTab === "insights" && <InsightsPanel />}
+        {insightsOn && adminTab === "insights" && <InsightsPanel />}
       </div>
     </div>
   );

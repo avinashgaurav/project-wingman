@@ -13,6 +13,7 @@ interface OpenEventDetail {
 export function Header() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [gateOpen, setGateOpen] = useState(false);
+  const [settingsHover, setSettingsHover] = useState(false);
 
   function requestOpenSettings() {
     if (isAdminUnlocked()) {
@@ -76,15 +77,12 @@ export function Header() {
           <UsageMeter />
           <button
             onClick={requestOpenSettings}
+            onMouseEnter={() => setSettingsHover(true)}
+            onMouseLeave={() => setSettingsHover(false)}
             className="p-1.5 transition-colors"
-            style={{ color: "var(--ink-4)" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "var(--brand-orange)";
-              e.currentTarget.style.background = "var(--surface-2)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "var(--ink-4)";
-              e.currentTarget.style.background = "transparent";
+            style={{
+              color: settingsHover ? "var(--brand-orange)" : "var(--ink-4)",
+              background: settingsHover ? "var(--surface-2)" : "transparent",
             }}
             title="Settings — admin passcode required"
             aria-label="Settings"

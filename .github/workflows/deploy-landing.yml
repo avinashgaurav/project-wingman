@@ -27,9 +27,11 @@ permissions:
   id-token: write
 
 # Coalesce overlapping deploys; never cancel an in-progress one so we
-# don't leave Pages in a half-published state.
+# don't leave Pages in a half-published state. Group key is namespaced
+# to this repo so it doesn't collide with other Pages workflows in the
+# same org.
 concurrency:
-  group: pages
+  group: pages-${{ github.repository }}
   cancel-in-progress: false
 
 jobs:
