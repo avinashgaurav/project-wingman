@@ -14,11 +14,12 @@ import { ObjectionPanel } from "./components/ObjectionPanel";
 import { MeetingCopilotPanel } from "./components/MeetingCopilotPanel";
 import { OnboardingChecklist } from "./components/OnboardingChecklist";
 import { ErrorBanner } from "./components/ErrorBanner";
+import { InsightsPanel } from "./components/InsightsPanel";
 import { isMeetingCopilotEnabled } from "../shared/meeting-copilot/feature-flag";
 import { listKB } from "../shared/utils/kb-storage";
-import { FileText, BookOpen, Radio } from "lucide-react";
+import { FileText, BookOpen, Radio, BarChart3 } from "lucide-react";
 
-type AdminTab = "form" | "kb" | "copilot";
+type AdminTab = "form" | "kb" | "copilot" | "insights";
 
 interface TabDef {
   id: AdminTab;
@@ -26,6 +27,8 @@ interface TabDef {
   icon: React.ReactNode;
   activeBg: string;
   activeText: string;
+  /** Which design-md skin powers this tab's content area. */
+  skin: "posthog" | "cursor" | "spotify" | "vercel" | "linear" | "spacex";
 }
 
 export default function App() {
@@ -39,9 +42,6 @@ export default function App() {
     listKB().then((entries) => setKbCount(entries.length)).catch(() => { /* ignore */ });
   }, []);
 
-  // Auth is disabled — anyone who opens the extension is treated as a local
-  // admin user. Role-based gates downstream still work because `user.role`
-  // is populated.
   useEffect(() => {
     if (!user) {
       setUser({
@@ -65,6 +65,7 @@ export default function App() {
       icon: <FileText size={12} />,
       activeBg: "bg-orange",
       activeText: "text-black",
+      skin: "posthog",
     },
     ...(hasKBAccess
       ? [
@@ -72,8 +73,9 @@ export default function App() {
             id: "kb" as const,
             label: "Knowledge",
             icon: <BookOpen size={12} />,
-            activeBg: "bg-blue",
-            activeText: "text-cream",
+            activeBg: "bg-orange",
+            activeText: "text-black",
+            skin: "posthog" as const,
           },
         ]
       : []),
@@ -83,32 +85,54 @@ export default function App() {
             id: "copilot" as const,
             label: "Copilot",
             icon: <Radio size={12} />,
-            activeBg: "bg-green",
+            activeBg: "bg-orange",
             activeText: "text-black",
+            skin: "cursor" as const,
           },
         ]
       : []),
+    {
+      id: "insights",
+      label: "Insights",
+      icon: <BarChart3 size={12} />,
+      activeBg: "bg-orange",
+      activeText: "text-black",
+      skin: "spotify",
+    },
   ];
   const showTabs = tabs.length > 1;
 
+  const activeTab = tabs.find((t) => t.id === adminTab) ?? tabs[0];
+  const activeSkin = activeTab.skin;
+
   return (
-    <div className="flex flex-col h-screen bg-surface-0 text-ink text-sm overflow-hidden font-sans">
+    // Outer chrome uses PostHog (the default) — header, tab strip, error banner.
+    // The active panel below swaps its data-skin per the active tab.
+    <div
+      data-skin="posthog"
+      className="flex flex-col h-screen text-sm overflow-hidden font-sans"
+      style={{ background: "var(--surface-0)", color: "var(--ink)" }}
+    >
       <Header />
 
       {showTabs && (
         <div className="px-3 pt-2 pb-1 w-full max-w-[720px] mx-auto">
-          <div className="flex gap-1 bg-surface-1 border border-line p-1">
+          <div
+            className="flex gap-1 p-1"
+            style={{ background: "var(--surface-1)", border: "1px solid var(--line)" }}
+          >
             {tabs.map((t) => {
               const active = adminTab === t.id;
               return (
                 <button
                   key={t.id}
                   onClick={() => setAdminTab(t.id)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium transition-colors ${
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold transition-colors ${
                     active
                       ? `${t.activeBg} ${t.activeText}`
                       : "text-ink-3 hover:text-ink hover:bg-surface-2"
                   }`}
+                  style={{ borderRadius: 6 }}
                 >
                   {t.icon}
                   {t.label}
@@ -119,7 +143,12 @@ export default function App() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 w-full max-w-[720px] mx-auto">
+      {/* Active panel inherits the tab's skin via data-skin */}
+      <div
+        data-skin={activeSkin}
+        className="flex-1 overflow-y-auto px-3 py-3 space-y-3 w-full max-w-[720px] mx-auto"
+        style={{ background: "var(--surface-0)", color: "var(--ink)" }}
+      >
         {error && (
           <ErrorBanner
             message={error}
@@ -161,6 +190,8 @@ export default function App() {
         )}
 
         {copilotOn && adminTab === "copilot" && <MeetingCopilotPanel />}
+
+        {adminTab === "insights" && <InsightsPanel />}
       </div>
     </div>
   );

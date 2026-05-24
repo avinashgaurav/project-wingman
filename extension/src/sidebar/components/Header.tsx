@@ -34,14 +34,38 @@ export function Header() {
 
   return (
     <>
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-line bg-surface-1">
+      <div
+        className="flex items-center justify-between px-3 py-2.5"
+        style={{
+          background: "var(--surface-1)",
+          borderBottom: "1px solid var(--line)",
+        }}
+      >
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-orange flex items-center justify-center">
-            <span className="text-[11px] font-bold text-black font-mono">PW</span>
+          {/* Brand mark — orange square persists across every skin */}
+          <div
+            className="w-7 h-7 flex items-center justify-center"
+            style={{ background: "var(--brand-orange)", borderRadius: 4 }}
+          >
+            <span
+              className="font-mono font-bold"
+              style={{ fontSize: 11, color: "#0A0A0A", letterSpacing: "-0.02em" }}
+            >
+              PW
+            </span>
           </div>
           <div className="flex flex-col leading-none">
-            <span className="font-semibold text-ink text-[13px] tracking-[-0.02em]">Project Wingman</span>
-            <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-ink-4 mt-0.5">
+            <span
+              className="font-bold"
+              style={{
+                color: "var(--ink)",
+                fontSize: 14,
+                letterSpacing: "-0.03em",
+              }}
+            >
+              Project Wingman
+            </span>
+            <span className="eyebrow mt-1" style={{ fontSize: 9 }}>
               Sales Copilot
             </span>
           </div>
@@ -52,7 +76,16 @@ export function Header() {
           <UsageMeter />
           <button
             onClick={requestOpenSettings}
-            className="p-1.5 text-ink-3 hover:text-orange hover:bg-surface-2 transition-colors"
+            className="p-1.5 transition-colors"
+            style={{ color: "var(--ink-4)" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "var(--brand-orange)";
+              e.currentTarget.style.background = "var(--surface-2)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "var(--ink-4)";
+              e.currentTarget.style.background = "transparent";
+            }}
             title="Settings — admin passcode required"
             aria-label="Settings"
           >
