@@ -699,6 +699,17 @@ button { font: inherit; cursor: pointer; }
 .compare__no {
   color: rgba(255,255,255,0.35);
 }
+.compare__disclaimer {
+  margin-top: 24px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(255,255,255,0.45);
+  font-style: italic;
+  text-align: center;
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+}
 
 /* ─────────────────────────── Pricing Section ───────────────── */
 /* FIX #57 + #67: New pricing transparency section */
@@ -814,4 +825,8 @@ button { font: inherit; cursor: pointer; }
   .trust__row { gap: 24px; }
   .hero__stats { grid-template-columns: repeat(2, 1fr); gap: 24px; }
   .hero__stat__value { font-size: 28px; }
+  /* Compare table is wrapped in overflow-x:auto so this only affects how
+   * much of the table fits before horizontal scroll kicks in. 420px keeps
+   * Feature + Wingman columns visible on a 320-375px phone. */
+  .compare__table { min-width: 420px; }
 }

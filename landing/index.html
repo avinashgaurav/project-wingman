@@ -12,9 +12,11 @@
     content="Open-source Chrome extension that coaches sales reps in real time during Google Meet calls. Bring your own Anthropic, Gemini, or Groq API key. No call data ever leaves your browser. MIT licensed."
   />
   <meta property="og:title" content="Project Wingman — Real-Time AI Sales Copilot for Google Meet" />
-  <meta property="og:description" content="Live coaching, pitch generation, and objection handling in your Chrome sidebar. BYOL — your call data never leaves your infrastructure. MIT licensed, open source." />
+  <meta property="og:description" content="Live coaching, pitch generation, and objection handling in your Chrome sidebar. BYOL — your call data never reaches Wingman's servers; it goes only to your configured LLM provider. MIT licensed, open source." />
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="og.png" />
+  <!-- og.png not yet authored; favicon.svg is a stopgap so social cards don't render
+       with a broken-image placeholder. Replace with a 1200x630 PNG when ready. -->
+  <meta property="og:image" content="favicon.svg" />
 
   <!-- ✅ FIX #71 — Structured data: SoftwareApplication -->
   <script type="application/ld+json">
@@ -66,7 +68,7 @@
         "name": "Is this a Gong alternative?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Wingman coaches you in real time during the call. Gong and Chorus analyze recordings after the call ends. Wingman also requires no shared backend and works with your existing LLM provider."
+          "text": "Wingman coaches you in real time during the call. Gong and Salesloft analyze recordings after the call ends. Wingman also requires no shared backend and works with your existing LLM provider."
         }
       }
     ]
@@ -441,22 +443,22 @@
               <td><span class="compare__no">Post-call only</span></td>
             </tr>
             <tr>
-              <td class="compare__feature">Call data stays in your infra</td>
-              <td class="compare__col--wingman"><span class="compare__yes">Yes — BYOL</span></td>
-              <td><span class="compare__no">Goes to Gong's cloud</span></td>
-              <td><span class="compare__no">Goes to Salesloft's cloud</span></td>
+              <td class="compare__feature">Call data reaches the vendor's servers</td>
+              <td class="compare__col--wingman"><span class="compare__yes">No — BYOL, your LLM only</span></td>
+              <td><span class="compare__no">Yes — Gong's cloud</span></td>
+              <td><span class="compare__no">Yes — Salesloft's cloud</span></td>
             </tr>
             <tr>
-              <td class="compare__feature">Prospect-side install required</td>
-              <td class="compare__col--wingman"><span class="compare__yes">None needed</span></td>
-              <td><span class="compare__no">Sometimes</span></td>
-              <td><span class="compare__no">Sometimes</span></td>
+              <td class="compare__feature">Prospect-side install</td>
+              <td class="compare__col--wingman"><span class="compare__yes">Not required</span></td>
+              <td><span class="compare__no">Bot joins via meeting link</span></td>
+              <td><span class="compare__no">Bot joins via meeting link</span></td>
             </tr>
             <tr>
-              <td class="compare__feature">Pricing</td>
+              <td class="compare__feature">Pricing (est.)</td>
               <td class="compare__col--wingman"><span class="compare__yes">API cost only (~$0.08/call)</span></td>
-              <td><span class="compare__no">~$1,200 / seat / yr</span></td>
-              <td><span class="compare__no">~$1,000+ / seat / yr</span></td>
+              <td><span class="compare__no">Not publicly listed*</span></td>
+              <td><span class="compare__no">Not publicly listed*</span></td>
             </tr>
             <tr>
               <td class="compare__feature">Open source</td>
@@ -465,13 +467,17 @@
               <td><span class="compare__no">Proprietary</span></td>
             </tr>
             <tr>
-              <td class="compare__feature">Lives in sidebar — no app switch</td>
-              <td class="compare__col--wingman"><span class="compare__yes">Chrome sidebar</span></td>
-              <td><span class="compare__no">Separate desktop app</span></td>
-              <td><span class="compare__no">Separate desktop app</span></td>
+              <td class="compare__feature">Surface where you actually use it</td>
+              <td class="compare__col--wingman"><span class="compare__yes">In-meet Chrome sidebar</span></td>
+              <td><span class="compare__no">Separate web app</span></td>
+              <td><span class="compare__no">Separate web app</span></td>
             </tr>
           </tbody>
         </table>
+        <p class="compare__disclaimer">
+          *Gong and Salesloft don't publish per-seat pricing; figures vary by deal size and contract terms.
+          Competitor capabilities described from public docs as of 2026 — verify on vendor sites before purchasing.
+        </p>
       </div>
     </div>
   </section>
