@@ -336,6 +336,7 @@ export function clearAllSessionData(): { removed: string[] } {
     "clientlens_session_history_v1",
     CALL_HISTORY_STORAGE_KEY,
     "clientlens_calendar_status_v1",
+    "clientlens_onboarding_dismissed_v1",
     "clientlens.transponder.pos",
     "clientlens.transponder.dock",
     "clientlens.transponder.layout",
