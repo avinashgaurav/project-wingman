@@ -19,6 +19,7 @@ import {
   type StoredSessionSummary,
 } from "../../shared/utils/settings-storage";
 import { buildCallRecord, saveCallRecord } from "../../shared/utils/call-history-storage";
+import { ProviderChip } from "./ProviderChip";
 import { pushZohoNote, pushCustomTool } from "../../shared/utils/integrations";
 import { parsePastedInvite } from "../../shared/utils/meeting-parse";
 import { CopyButton } from "./CopyButton";
@@ -420,12 +421,17 @@ export function MeetingCopilotPanel() {
 
   return (
     <div style={wrap}>
-      <div style={header}>
-        <span
-          className={isLive ? "signal-dot signal-dot--pulse" : "signal-dot"}
-          style={{ background: isLive ? "var(--signal-live)" : "var(--ink-5)" }}
-        />
-        <span style={kicker}>Meeting copilot {isLive ? "— live" : "— pre-call"}</span>
+      <div style={{ ...header, justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            className={isLive ? "signal-dot signal-dot--pulse" : "signal-dot"}
+            style={{ background: isLive ? "var(--signal-live)" : "var(--ink-5)" }}
+          />
+          <span style={kicker}>Meeting copilot {isLive ? "— live" : "— pre-call"}</span>
+        </div>
+        {/* #82: provider chip for mid-call key-fail recovery. Switch among
+            configured providers without leaving the Copilot view. */}
+        <ProviderChip />
       </div>
 
       <div style={infoBox}>
