@@ -35,6 +35,12 @@ export function SampleDataBanner() {
     }
   });
 
+  // A single loadSampleData() write fires the call-history change event
+  // plus 5 chrome.storage.onChanged events (one per KB entry). All 9 land
+  // in the same React render batch via setHasDemo(true), so the redundant
+  // refresh()es are deduped at commit time. If hasSampleDataLoaded ever
+  // grows an async network call, debounce this effect (e.g. with a 50ms
+  // trailing edge) — today it's pure localStorage reads, so unguarded.
   useEffect(() => {
     let cancelled = false;
     async function refresh() {

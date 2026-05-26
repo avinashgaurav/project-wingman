@@ -864,9 +864,34 @@ function SampleDataToggle() {
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    void import("../../shared/utils/sample-data").then((m) =>
-      m.hasSampleDataLoaded().then(setLoaded).catch(() => setLoaded(false)),
-    );
+    let cancelled = false;
+    async function refresh() {
+      try {
+        const m = await import("../../shared/utils/sample-data");
+        const v = await m.hasSampleDataLoaded();
+        if (!cancelled) setLoaded(v);
+      } catch {
+        if (!cancelled) setLoaded(false);
+      }
+    }
+    void refresh();
+    // Sync with samples loaded via the KB / Copilot empty-state CTAs.
+    // Without this, the toggle reads false on mount and a second click
+    // would trigger a duplicate load.
+    const onStorageChanged = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      area: string,
+    ) => {
+      if (area === "local" && "clientlens_kb" in changes) void refresh();
+    };
+    const onSameTab = () => void refresh();
+    try { chrome.storage?.onChanged?.addListener(onStorageChanged); } catch { /* noop */ }
+    window.addEventListener("wingman:call-history-changed", onSameTab);
+    return () => {
+      cancelled = true;
+      try { chrome.storage?.onChanged?.removeListener(onStorageChanged); } catch { /* noop */ }
+      window.removeEventListener("wingman:call-history-changed", onSameTab);
+    };
   }, []);
   async function toggle() {
     setBusy(true);

@@ -111,7 +111,14 @@ const SAMPLE_KB_FIXTURES: Omit<KBEntry, "uploaded_at">[] = [
   },
 ];
 
-const SAMPLE_CALL_FIXTURES: Omit<StoredCallRecord, "saved_at" | "date">[] = [
+// generated_at on each fixture's summary blob is set at loadSampleData()
+// call time, not module-import time — otherwise the timestamp would
+// freeze to whenever the module was first dynamically imported.
+type SampleCallFixture = Omit<StoredCallRecord, "saved_at" | "date" | "summary"> & {
+  summary: Omit<StoredCallRecord["summary"], "generated_at">;
+};
+
+const SAMPLE_CALL_FIXTURES: SampleCallFixture[] = [
   {
     id: DEMO_CALL_PREFIX + "acme-cloud-vpsales",
     company: "Acme Cloud",
@@ -143,7 +150,6 @@ const SAMPLE_CALL_FIXTURES: Omit<StoredCallRecord, "saved_at" | "date">[] = [
         { item: "Pricing + ROI", status: "covered" },
         { item: "Next steps", status: "covered" },
       ],
-      generated_at: new Date().toISOString(),
     },
   },
   {
@@ -174,7 +180,6 @@ const SAMPLE_CALL_FIXTURES: Omit<StoredCallRecord, "saved_at" | "date">[] = [
         { item: "TCO walkthrough", status: "covered" },
         { item: "Pilot scope", status: "skipped" },
       ],
-      generated_at: new Date().toISOString(),
     },
   },
   {
@@ -205,7 +210,6 @@ const SAMPLE_CALL_FIXTURES: Omit<StoredCallRecord, "saved_at" | "date">[] = [
         { item: "Security review", status: "covered" },
         { item: "Contract terms", status: "covered" },
       ],
-      generated_at: new Date().toISOString(),
     },
   },
   {
@@ -234,18 +238,37 @@ const SAMPLE_CALL_FIXTURES: Omit<StoredCallRecord, "saved_at" | "date">[] = [
         { item: "Demo", status: "skipped" },
         { item: "Pricing", status: "skipped" },
       ],
-      generated_at: new Date().toISOString(),
     },
   },
 ];
 
 export async function loadSampleData(): Promise<void> {
   const now = new Date().toISOString();
+
+  // Idempotence guard: skip any KB fixture whose id is already in the store.
+  // Without this, toggling Settings off→on (or load racing with another
+  // CTA-triggered load) would duplicate entries with the same id.
+  const existingKb = await listKB();
+  const existingKbIds = new Set(existingKb.map((e) => e.id));
   for (const fx of SAMPLE_KB_FIXTURES) {
+    if (existingKbIds.has(fx.id)) continue;
     await addKB({ ...fx, uploaded_at: now });
   }
+
+  // Same guard for call records. saveCallRecord is idempotent on id (it
+  // replaces an existing record with the same id), but skipping the
+  // overwrite keeps the call timestamps stable across toggle cycles.
+  const existingCallIds = new Set(listCallRecords().map((r) => r.id));
   for (const fx of SAMPLE_CALL_FIXTURES) {
-    saveCallRecord({ ...fx, saved_at: now, date: now });
+    if (existingCallIds.has(fx.id)) continue;
+    // generated_at injected here (not at fixture-declaration time) so the
+    // timestamp reflects the actual load, not the module's first import.
+    saveCallRecord({
+      ...fx,
+      saved_at: now,
+      date: now,
+      summary: { ...fx.summary, generated_at: now },
+    });
   }
 }
 

@@ -45,7 +45,23 @@ export function KnowledgeBasePanel() {
     listKB().then(setEntries);
     // Re-pull on every indexer status change so the pill flips live.
     const off = onIndexProgress(() => { void listKB().then(setEntries); });
-    return () => { off(); };
+    // Re-pull on direct writes to chrome.storage.local — handles paths that
+    // skip the indexer entirely (sample-data fixtures, manual addKB calls
+    // from sibling panels, etc.). Without this the panel can show a stale
+    // empty list after demo data is loaded via the empty-state CTA.
+    const onStorageChanged = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      area: string,
+    ) => {
+      if (area === "local" && "clientlens_kb" in changes) {
+        void listKB().then(setEntries);
+      }
+    };
+    try { chrome.storage?.onChanged?.addListener(onStorageChanged); } catch { /* non-extension env */ }
+    return () => {
+      off();
+      try { chrome.storage?.onChanged?.removeListener(onStorageChanged); } catch { /* noop */ }
+    };
   }, []);
 
   if (!user || user.role === "sales_rep" || user.role === "viewer") return null;
@@ -466,7 +482,9 @@ export function KnowledgeBasePanel() {
             )}
           </div>
         )}
-        {entries.length === 0 && <KBEmptyState />}
+        {entries.length === 0 ? (
+          <KBEmptyState />
+        ) : (
         <ul className="space-y-1.5 max-h-60 overflow-y-auto">
           {entries.map((e) => {
             const isOpen = expanded.has(e.id);
@@ -533,6 +551,7 @@ export function KnowledgeBasePanel() {
             );
           })}
         </ul>
+        )}
       </div>
     </div>
   );

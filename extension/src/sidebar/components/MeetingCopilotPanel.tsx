@@ -1002,9 +1002,9 @@ function summaryToMarkdown(
 // "Start live copilot" instructions. CTA opens the sample-data toggle
 // (part of #95).
 function CopilotEmptyState() {
-  const [loading, setLoading] = React.useState(false);
-  const [hasDemo, setHasDemo] = React.useState(false);
-  React.useEffect(() => {
+  const [loading, setLoading] = useState(false);
+  const [hasDemo, setHasDemo] = useState(false);
+  useEffect(() => {
     void import("../../shared/utils/sample-data").then((m) =>
       m.hasSampleDataLoaded().then(setHasDemo).catch(() => setHasDemo(false)),
     );
