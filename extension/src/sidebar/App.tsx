@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAppStore } from "./stores/app-store";
 import { usePageContext } from "./hooks/usePageContext";
+import { useMeetDetection } from "./hooks/useMeetDetection";
+import { useMeetingCopilotStore } from "./stores/meeting-copilot-store";
 import { PersonalizationForm } from "./components/PersonalizationForm";
 import { AssetPreview } from "./components/AssetPreview";
 import { CouncilRunner } from "./components/CouncilRunner";
@@ -40,13 +42,38 @@ interface TabDef {
 export default function App() {
   const { user, setUser, isGenerating, lastResult, error, setError, flowStep, outputMode } = useAppStore();
   const { detectContext } = usePageContext();
-  const [adminTab, setAdminTab] = useState<AdminTab>("form");
+  const [adminTab, setAdminTabState] = useState<AdminTab>("form");
   const [kbCount, setKbCount] = useState(0);
+
+  // Track whether the rep has explicitly picked a tab in this sidebar lifetime.
+  // Auto-switching to Copilot (when a Meet is detected) should ONLY happen
+  // before the rep has clicked anything — once they've made a choice, respect
+  // it for the rest of the session.
+  const userPickedTabRef = useRef(false);
+  const setAdminTab = (tab: AdminTab) => {
+    userPickedTabRef.current = true;
+    setAdminTabState(tab);
+  };
+
+  const hasMeetTab = useMeetDetection();
+  const hasActiveSession = useMeetingCopilotStore((s) => s.session !== null);
 
   useEffect(() => {
     detectContext();
     listKB().then((entries) => setKbCount(entries.length)).catch(() => { /* ignore */ });
   }, []);
+
+  // #79: auto-switch to Copilot tab when the rep has a Meet open and hasn't
+  // already navigated somewhere else. We don't auto-switch if a session is
+  // already active because the rep is already mid-flow — moving them around
+  // would be jarring. Also skip if the Copilot tab isn't enabled.
+  useEffect(() => {
+    if (userPickedTabRef.current) return;
+    if (!hasMeetTab) return;
+    if (hasActiveSession) return;
+    if (!isMeetingCopilotEnabled()) return;
+    setAdminTabState("copilot");
+  }, [hasMeetTab, hasActiveSession]);
 
   useEffect(() => {
     if (!user) {
