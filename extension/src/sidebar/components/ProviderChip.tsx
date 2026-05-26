@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { getSettings, saveSettings } from "../../shared/utils/settings-storage";
-import type { LLMProvider } from "../../shared/agents/llm-client";
+import { getSettings, saveSettings, STORAGE_KEY as SETTINGS_KEY } from "../../shared/utils/settings-storage";
+import { resolveLLMConfig, type LLMProvider } from "../../shared/agents/llm-client";
 
 /**
  * Mid-call LLM provider switch (#82).
@@ -37,13 +37,13 @@ const ALL_OPTIONS: ProviderOption[] = [
 ];
 
 function availableProviders(): ProviderOption[] {
-  const s = getSettings();
   return ALL_OPTIONS.filter((opt) => {
-    if (opt.id === "custom") {
-      return !!s.customBaseUrl && !!s.customModel;
-    }
-    // anthropic / gemini / groq / openrouter are backend-proxied — always usable.
-    return true;
+    // resolveLLMConfig is the single source of truth for "can I make a call
+    // with this provider?" — it knows about both extension-side keys (custom)
+    // and backend-proxied providers' configuration requirements. Filter via
+    // it so the chip only lists providers that won't immediately error.
+    const result = resolveLLMConfig({ provider: opt.id, model: "" });
+    return !("error" in result);
   });
 }
 
@@ -72,6 +72,18 @@ export function ProviderChip() {
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [open]);
+
+  // Keep `current` in sync with cross-tab settings writes (e.g. the rep
+  // changes provider via SettingsPanel in another window). Without this the
+  // chip would show a stale label after an external write.
+  useEffect(() => {
+    function onStorage(e: StorageEvent) {
+      if (e.key !== SETTINGS_KEY) return;
+      setCurrent(getSettings().provider);
+    }
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   function pickProvider(p: LLMProvider) {
     const next = { ...getSettings(), provider: p };
@@ -112,8 +124,15 @@ export function ProviderChip() {
         <ChevronDown size={10} style={{ marginLeft: 4, opacity: 0.7 }} />
       </button>
       {open && (
-        <ul
-          role="listbox"
+        // Using role="menu" + role="menuitemradio" instead of listbox/option.
+        // The dropdown is action-driven (pick one) rather than a multi-select
+        // widget, and listbox + nested <button role="option"> in <li> wrappers
+        // is a malformed ARIA composite that SR implementations announce
+        // inconsistently. menu/menuitemradio is the correct pattern for a
+        // "pick one of N actions" dropdown.
+        <div
+          role="menu"
+          aria-label="Switch LLM provider"
           style={{
             position: "absolute",
             top: "100%",
@@ -126,43 +145,41 @@ export function ProviderChip() {
             zIndex: 50,
             minWidth: 140,
             padding: 4,
-            listStyle: "none",
           }}
         >
           {options.map((opt) => {
             const active = opt.id === current;
             return (
-              <li key={opt.id}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={active}
-                  onClick={() => pickProvider(opt.id)}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    textAlign: "left",
-                    padding: "6px 10px",
-                    fontSize: 12,
-                    background: active ? "var(--brand-orange)" : "transparent",
-                    color: active ? "#0A0A0A" : "var(--ink)",
-                    border: "none",
-                    borderRadius: 4,
-                    cursor: "pointer",
-                    fontWeight: active ? 700 : 500,
-                  }}
-                >
-                  {opt.label}
-                  {active && (
-                    <span style={{ marginLeft: 6, fontSize: 10 }} aria-hidden="true">
-                      ✓
-                    </span>
-                  )}
-                </button>
-              </li>
+              <button
+                key={opt.id}
+                type="button"
+                role="menuitemradio"
+                aria-checked={active}
+                onClick={() => pickProvider(opt.id)}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "6px 10px",
+                  fontSize: 12,
+                  background: active ? "var(--brand-orange)" : "transparent",
+                  color: active ? "#0A0A0A" : "var(--ink)",
+                  border: "none",
+                  borderRadius: 4,
+                  cursor: "pointer",
+                  fontWeight: active ? 700 : 500,
+                }}
+              >
+                {opt.label}
+                {active && (
+                  <span style={{ marginLeft: 6, fontSize: 10 }} aria-hidden="true">
+                    ✓
+                  </span>
+                )}
+              </button>
             );
           })}
-        </ul>
+        </div>
       )}
     </div>
   );

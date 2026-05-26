@@ -122,6 +122,7 @@ function teardownOrphan() {
   teardownDone = true;
   try { observer.disconnect(); } catch { /* observer may not exist yet */ }
   if (silenceTimer) window.clearTimeout(silenceTimer);
+  if (streamActiveTimer) { window.clearTimeout(streamActiveTimer); streamActiveTimer = null; }
   stopTick();
   if (root) { try { root.remove(); } catch { /* noop */ } root = null; }
   if (promptEl) { try { promptEl.remove(); } catch { /* noop */ } promptEl = null; }
@@ -1079,11 +1080,12 @@ function handleAsk() {
 // goes quiet. Kept separate from the silenceWarning machinery, which fires
 // on a longer cadence and surfaces a different UI affordance.
 const STREAM_ACTIVE_MS = 5000;
-let streamActiveTimer: ReturnType<typeof setTimeout> | null = null;
+let streamActiveTimer: number | null = null;
 function markStreamActive() {
   state.streamActive = true;
-  if (streamActiveTimer) clearTimeout(streamActiveTimer);
-  streamActiveTimer = setTimeout(() => {
+  if (streamActiveTimer) window.clearTimeout(streamActiveTimer);
+  streamActiveTimer = window.setTimeout(() => {
+    streamActiveTimer = null;
     state.streamActive = false;
     render();
   }, STREAM_ACTIVE_MS);
@@ -1136,6 +1138,8 @@ chrome.runtime.onMessage.addListener((msg) => {
     render();
   } else if (m.type === "MC_TRANSPONDER_CLOSE") {
     if (silenceTimer) window.clearTimeout(silenceTimer);
+    if (streamActiveTimer) { window.clearTimeout(streamActiveTimer); streamActiveTimer = null; }
+    state.streamActive = false;
     stopTick();
     if (root) { root.remove(); root = null; }
     // Re-enable the in-call prompt for any *future* call on this tab.

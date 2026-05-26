@@ -12,7 +12,9 @@
 import type { LLMProvider } from "../agents/llm-client";
 import { CALL_HISTORY_STORAGE_KEY } from "./call-history-storage";
 
-const STORAGE_KEY = "clientlens_user_settings_v1";
+// Exported so other modules (e.g. ProviderChip) can listen to cross-tab
+// storage events on this exact key without duplicating the literal.
+export const STORAGE_KEY = "clientlens_user_settings_v1";
 
 export type IntegrationId = "zoho" | "googleMeet" | "zoom" | "customTool";
 

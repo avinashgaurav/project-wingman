@@ -57,6 +57,10 @@ export default function App() {
 
   const hasMeetTab = useMeetDetection();
   const hasActiveSession = useMeetingCopilotStore((s) => s.session !== null);
+  // Build-time feature flag — captured once at mount via useState's lazy init
+  // so it's in the auto-switch effect's dep array without lint complaints. If
+  // the flag ever becomes dynamic, lift this to its own subscription.
+  const [copilotFlagOn] = useState(() => isMeetingCopilotEnabled());
 
   useEffect(() => {
     detectContext();
@@ -71,9 +75,9 @@ export default function App() {
     if (userPickedTabRef.current) return;
     if (!hasMeetTab) return;
     if (hasActiveSession) return;
-    if (!isMeetingCopilotEnabled()) return;
+    if (!copilotFlagOn) return;
     setAdminTabState("copilot");
-  }, [hasMeetTab, hasActiveSession]);
+  }, [hasMeetTab, hasActiveSession, copilotFlagOn]);
 
   useEffect(() => {
     if (!user) {
@@ -89,7 +93,7 @@ export default function App() {
   if (!user) return null;
 
   const hasKBAccess = user.role === "admin" || user.role === "pmm" || user.role === "designer";
-  const copilotOn = isMeetingCopilotEnabled();
+  const copilotOn = copilotFlagOn;
 
   const tabs: TabDef[] = [
     {

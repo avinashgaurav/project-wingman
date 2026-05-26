@@ -69,7 +69,12 @@ export function MeetingCopilotPanel() {
   // (Calendar connected / paste filled / manual fields touched), collapse
   // the other two behind a disclosure. Local state — resets when the rep
   // navigates away and returns, which is the intended ergonomics.
+  // Also resets back to false when no path is committed (e.g. the rep
+  // disconnects calendar and clears all fields) so the default "show
+  // everything" UI returns instead of staying permanently expanded.
   const [showAllPaths, setShowAllPaths] = useState(false);
+  // (The reset effect lives below, after companyName + pasteText are
+  // declared — see the useEffect that watches all three commit inputs.)
 
   async function handleConnectCalendar() {
     setCalendarBusy(true);
@@ -142,6 +147,19 @@ export function MeetingCopilotPanel() {
   const [pasteBusy, setPasteBusy] = useState(false);
   const [pasteStatus, setPasteStatus] = useState<{ ok: boolean; detail: string } | null>(null);
   const [showManualFields, setShowManualFields] = useState(true);
+
+  // #78 reset: if every commit input goes empty (rep cleared calendar +
+  // paste + company), drop showAllPaths so the panel returns to the
+  // default "all paths visible" state on its own — avoids the stuck-open
+  // state the reviewer flagged.
+  useEffect(() => {
+    if (!showAllPaths) return;
+    const stillCommitted =
+      !!calendarStatus?.connected ||
+      pasteText.trim().length > 30 ||
+      companyName.trim().length > 0;
+    if (!stillCommitted) setShowAllPaths(false);
+  }, [showAllPaths, calendarStatus?.connected, pasteText, companyName]);
 
   const [urlBusy, setUrlBusy] = useState(false);
   const [urlStatus, setUrlStatus] = useState<{ ok: boolean; detail: string } | null>(null);
