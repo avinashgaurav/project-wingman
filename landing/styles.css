@@ -91,8 +91,9 @@ button { font: inherit; cursor: pointer; }
 }
 .nav-links a:hover { color: #FFFFFF; }
 /* Ghost-outlined to match the strict SpaceX hero — the nav rides over the
-   black hero band, so a ghost pill keeps the "single ghost CTA" register
-   consistent rather than a filled-orange mark. */
+   black hero band, so a ghost pill reads more SpaceX than a filled-orange
+   mark. (The hero band itself still has two pills — this isn't strict
+   "single CTA per band"; it's the closest fit without dropping a link.) */
 .nav-cta {
   background: transparent;
   color: #FFFFFF;
@@ -582,7 +583,6 @@ button { font: inherit; cursor: pointer; }
 .cta .btn-pill--primary:hover {
   background: rgba(255,255,255,0.06);
   border-color: #FFFFFF;
-  filter: none;
 }
 
 /* ─────────────────────────── Footer (Linear) ───────────────── */

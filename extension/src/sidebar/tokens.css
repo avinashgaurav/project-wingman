@@ -406,7 +406,13 @@
 
   /* SpaceX display: uppercase D-DIN-Bold with POSITIVE tracking
    * (+1.6px @ 80px = +0.02em). D-DIN isn't web-available; the landing
-   * substitutes its display family uppercased with this tracking. */
+   * substitutes its display family uppercased with this tracking.
+   *
+   * NOTE: --display-transform: uppercase here is DOCUMENTATION-ONLY for
+   * the extension. No sidebar surface sets data-skin="spacex" — the
+   * landing hero applies uppercase directly via .hero__headline, not
+   * .display-heading. If a future spacex-skinned in-extension surface
+   * uses .display-heading it WILL uppercase; that's intended, not a bug. */
   --display-tracking: 0.02em;
   --display-weight: 700;
   --display-transform: uppercase;
@@ -435,7 +441,9 @@
  * uppercase + positive tracking. Opt-in: add the class to display-level
  * headings; body text is unaffected. */
 .display-heading {
-  letter-spacing: var(--display-tracking, -0.02em);
+  /* Fallbacks mirror the :root/brand (PostHog) defaults, since :root is
+   * the true fallback skin when no data-skin ancestor is present. */
+  letter-spacing: var(--display-tracking, -0.025em);
   font-weight: var(--display-weight, 700);
   text-transform: var(--display-transform, none);
 }

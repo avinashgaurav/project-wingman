@@ -252,7 +252,7 @@ function EmptyState() {
       >
         <Radio size={20} />
       </div>
-      <h3 className="font-bold" style={{ color: "var(--ink)", fontSize: 18, letterSpacing: "-0.02em" }}>
+      <h3 className="display-heading" style={{ color: "var(--ink)", fontSize: 18 }}>
         No calls yet.
       </h3>
       <p style={{ color: "var(--ink-3)", fontSize: 13, maxWidth: 320, lineHeight: 1.45 }}>
