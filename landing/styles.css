@@ -90,17 +90,20 @@ button { font: inherit; cursor: pointer; }
   transition: color 140ms ease;
 }
 .nav-links a:hover { color: #FFFFFF; }
+/* Ghost-outlined to match the strict SpaceX hero — the nav rides over the
+   black hero band, so a ghost pill keeps the "single ghost CTA" register
+   consistent rather than a filled-orange mark. */
 .nav-cta {
-  background: #F58549;
-  color: #0A0A0A;
+  background: transparent;
+  color: #FFFFFF;
   padding: 8px 16px;
   border-radius: 9999px;
   font-size: 13px;
   font-weight: 700;
-  border: none;
-  transition: filter 140ms ease, transform 140ms ease;
+  border: 1px solid rgba(255,255,255,0.4);
+  transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
 }
-.nav-cta:hover { filter: brightness(1.05); transform: translateY(-1px); }
+.nav-cta:hover { background: rgba(255,255,255,0.06); border-color: #FFFFFF; transform: translateY(-1px); }
 @media (max-width: 768px) {
   .nav-links { display: none; }
 }
@@ -569,6 +572,17 @@ button { font: inherit; cursor: pointer; }
   font-size: 18px;
   color: rgba(255,255,255,0.7);
   margin-bottom: 40px;
+}
+/* SpaceX-echo band: ghost the filled-orange CTA to match the hero. */
+.cta .btn-pill--primary {
+  background: transparent;
+  color: #FFFFFF;
+  border-color: rgba(255,255,255,0.4);
+}
+.cta .btn-pill--primary:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: #FFFFFF;
+  filter: none;
 }
 
 /* ─────────────────────────── Footer (Linear) ───────────────── */
