@@ -47,11 +47,12 @@ export function SampleDataToggle() {
       const m = await import("../../shared/utils/sample-data");
       if (loaded) {
         await m.clearSampleData();
-        setLoaded(false);
       } else {
         await m.loadSampleData();
-        setLoaded(true);
       }
+      // Re-read actual storage rather than optimistically flipping — if the
+      // load/clear threw mid-write, state stays truthful to disk.
+      setLoaded(await m.hasSampleDataLoaded());
     } finally {
       setBusy(false);
     }

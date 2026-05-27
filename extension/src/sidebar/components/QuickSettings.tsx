@@ -65,6 +65,14 @@ export function QuickSettings() {
         <div
           role="dialog"
           aria-label="Quick settings"
+          // Defensive: keep the outside-click handler from ever firing on a
+          // mousedown that originated inside the popover. The nested
+          // Provider/Model dropdowns collapse their option rows on click,
+          // which can detach the clicked node before later handlers run;
+          // stopping mousedown propagation here makes "close only on a
+          // genuinely-outside click" robust regardless of inner-component
+          // event timing.
+          onMouseDown={(e) => e.stopPropagation()}
           style={{
             position: "absolute",
             top: "100%",
@@ -100,6 +108,7 @@ export function QuickSettings() {
             onClick={() => setDeepResearchEnabled(!deepResearchEnabled)}
             role="switch"
             aria-checked={deepResearchEnabled}
+            aria-label="Deep research"
             className="w-full flex items-center justify-between gap-3 p-3 mb-2"
             style={{
               background: "var(--surface-2)",
