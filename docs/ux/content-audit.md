@@ -11,7 +11,7 @@ Scope note: this audit covers strings *rendered to the user*. Code comments and 
 | `hooks/useEmailCouncil.ts:32` | "Missing email input" | "Add the recipient and context, then draft again." |
 | `hooks/useObjection.ts:23` | "No objection text" | "Paste the prospect's objection first." |
 | `hooks/useCouncil.ts:31` | "Missing personalization input or brand assets" | "Fill the company and persona, then generate." |
-| `shared/agents/council.ts:527` | "Council could not produce a draft. Issues: …" | "The council couldn't ground a draft — add a KB entry covering this, then retry. (…)" |
+| `shared/agents/council.ts:530` | "Council could not produce a draft. Issues: …" | "The council couldn't ground a draft — add a KB entry covering this, then retry. (…)" |
 
 These four are the first sweep (this PR). The `detail:` strings in `MeetingCopilotPanel` (lines 188/216/276/420) are already instructive and on-voice — KEEP.
 

@@ -36,7 +36,7 @@ Short, no apology, no jargon, **always end with the fix**. Format: *what happene
 | "Missing email input" | "Add the recipient and context, then draft again." |
 | "No objection text" | "Paste the prospect's objection first." |
 | "Missing personalization input or brand assets" | "Fill the company and persona, then generate." |
-| "Council could not produce a draft. Issues: …" | "The council couldn't ground a draft — add a KB entry that covers this, then retry. (…)" |
+| "Council could not produce a draft. Issues: …" | "The council couldn't ground a draft — add a KB entry covering this, then retry. (…)" |
 
 Keep "council" (per decision 1) but make the next step obvious. Mid-call, the rep needs the fix in the first glance.
 
