@@ -4,7 +4,7 @@
 
 ## TL;DR
 
-Adopt **Approach 1: single response with collapsible reasoning**. Ship it behind a feature flag so the current panel remains the fallback during the migration. Streaming (Approach 3) is a follow-up epic once the LLM client supports it. Tabs (Approach 2) are rejected — they add navigation, which is the thing we're trying to remove mid-call.
+Adopt **Approach 1: single response with collapsible reasoning**. Ship it behind a feature flag so the current panel remains the fallback during the migration. Streaming (Approach 3) is a follow-up epic — blocked not on transport (the LLM client already streams) but on re-shaping `respondAgent` so it emits prose + structured trailer compatibly. Tabs (Approach 2) are rejected — they add navigation, which is the thing we're trying to remove mid-call.
 
 ---
 
@@ -31,7 +31,7 @@ So the real problem to solve is narrower than the issue framing implied:
 - `extension/src/shared/agents/objection-council.ts` — yields `stage` / `agent` / `done` / `error` events.
 - `extension/src/shared/types/index.ts:420` — `ObjectionResponse = { summary, response, citations[], confidence }`.
 
-**Live output shape (one panel):**
+**Live output shape (2–3 stacked cards depending on citation count):**
 
 ```
 ┌─ Objection ───────────────────────────────┐
@@ -40,13 +40,17 @@ So the real problem to solve is narrower than the issue framing implied:
 ┌─ Grounded response · conf 87% ─────────────┐
 │ <60–120 word reply text>                  │
 └────────────────────────────────────────────┘
-┌─ Citations (3) ────────────────────────────┐
+┌─ Citations (3)  [hidden when len === 0] ──┐
 │ battlecard_01: "quote..."                  │
 │ case_study_acme: "quote..."                │
 │ security_compliance: "quote..."            │
 └────────────────────────────────────────────┘
 [ Copy response ]
 ```
+
+`ObjectionResponse.citations` is typed as `{ source_id: string; quote: string }[]` (`types/index.ts:420`), so the inline-marker work in #84a indexes by `citations[N-1].source_id`, not by array position alone.
+
+**Pre-existing code bug to fix in #84a:** `respondAgent` returns `agent: "icp_personalization"` (`objection-council.ts:103` and `:113`) instead of an objection-specific tag. The `AgentName` union in `types/index.ts:116` doesn't have a `"respond"` entry. The `▾ Why this answer` disclosure in #84b subscribes to `agent` events — if we don't fix the tag, the disclosure will receive events labeled `icp_personalization` which is the email-council role. #84a extends the union with `"respond"` and corrects both call sites.
 
 Already one-shot. The redesign decisions below are about **what reasoning/trust signal to layer on top**, not about merging 3 columns into 1.
 
@@ -97,7 +101,13 @@ Already one-shot. The redesign decisions below are about **what reasoning/trust 
 
 **Cons:**
 - Requires the response agent to emit citation markers **inline in the response text**, not as a parallel array. Need a deterministic format the renderer can parse (e.g., `[1]` `[2]` where the number indexes `citations[]`).
-- LLMs sometimes hallucinate markers or drop them. Need a renderer that gracefully degrades to "no inline chips, show citations as a flat list" when parse fails.
+- LLMs sometimes hallucinate markers (out-of-bounds `[7]` when only 3 citations exist, or `[0]`) or drop them entirely. Renderer must gracefully degrade.
+
+**Parser fallback spec (concrete — feeds #84a AC):**
+1. Tokenize the response into `text` + `marker(N)` tokens via regex `/\[(\d+)\]/g`.
+2. For each marker token: if `N < 1 || N > citations.length`, **discard** the marker (render as literal `[N]` text, not a chip).
+3. If **more than 30%** of detected markers are invalid (out-of-bounds, duplicate, or `N === 0`), treat the whole response as **parse-failed** and fall back to the legacy "flat citations card below" rendering — `[N]` markers are rendered as literal text in the prose.
+4. If zero markers are detected and citations are non-empty, also fall back to legacy rendering — same path.
 
 **Effort:** ~1–2 days. Renderer + prompt update + parse-fail fallback + flag.
 
@@ -139,13 +149,13 @@ Already one-shot. The redesign decisions below are about **what reasoning/trust 
 - Best UX, hands down.
 
 **Cons:**
-- **Blocked on LLM client work.** Today `client.call(system, user, maxTokens)` returns a complete string. Adding `client.stream(...)` requires per-provider streaming wiring (Anthropic SSE, Gemini SSE, Groq SSE, OpenRouter SSE, Custom OpenAI-compatible). Real work — not a UI change.
-- JSON-extraction (`extractJson`) over a partial stream is non-trivial. The current prompt asks for `{summary, response, citations, confidence}` — to stream the `response` field while still emitting structured `summary` / `citations` / `confidence`, the agent contract has to change (e.g., separate prefix-marker for the prose, then a structured trailer, or two separate calls).
-- The fallback story (non-streaming providers) means we still need Approach 1's renderer for parity. So Approach 3 is "Approach 1 + a streaming source," not a replacement.
+- **Not blocked on transport — blocked on agent contract.** The LLM client already supports streaming: `LLMClient.callStream` is declared at `llm-client.ts:116`; `ProxiedLLMClient.callStream` is fully implemented at `:233` (SSE, `onDelta` callback, 120s timeout) and routes Anthropic / Gemini / Groq / OpenRouter through `/api/v1/llm/stream`. `makeLLMClient` (`:439`) wraps any provider that doesn't natively stream with a one-shot delta. So token-by-token transport is free today; the agent layer just doesn't use it (`respondAgent` calls `client.call`, not `callStream`).
+- **The real cost is the JSON-streaming contract.** Today `respondAgent` asks for `{summary, response, citations, confidence}` and parses the whole blob via `extractJson` once it's complete. To stream the `response` field while still emitting structured `summary` / `citations` / `confidence`, the agent contract has to change. Two options: (a) emit prose first with `[N]` markers inline, then a JSON trailer with `{summary, citations, confidence}` — separator-delimited; or (b) make two LLM calls — one for prose (streamed), one for citations + summary + confidence (non-streamed, runs in parallel against the same retrieval set). (b) is simpler and lets the disclosure render the moment retrieval picks land instead of waiting for prose.
+- The fallback story (when `callStream` isn't wired or errors mid-stream) means we still need Approach 1's renderer for parity. So Approach 3 is "Approach 1 + a streaming source," not a replacement.
 
-**Effort:** ~5–7 days. Mostly the LLM client work; the renderer is a small delta on Approach 1.
+**Effort:** ~3–4 days. Agent contract refactor + dual-call orchestration + streaming-error recovery. Renderer is a small delta on Approach 1.
 
-**Verdict:** **Defer to a follow-up epic.** Worth doing, but it's not on the critical path for solving the trust/accountability problem today. Approach 1 ships first; streaming layers on top without re-doing the renderer.
+**Verdict:** **Defer to a follow-up epic (#84d).** Worth doing, but it's not on the critical path for solving the trust/accountability problem today. Approach 1 ships first; streaming layers on top without re-doing the renderer.
 
 ---
 
@@ -155,25 +165,38 @@ Already one-shot. The redesign decisions below are about **what reasoning/trust 
 
 **Decision:** The council already produces one merged output (`ObjectionResponse`). Keep it that way. The retrieval agent's `relevant_ids` are exposed via the existing `agent` event stream — the UI subscribes if it wants to render the retrieval picks in the disclosure. No new contract.
 
-For inline citation markers, **extend the response agent's prompt** to inline `[N]` markers in the `response` field where N indexes `citations[N-1]`. Renderer parses on the way out. If parse fails (no markers found), fall back to the legacy citations-list rendering.
+For inline citation markers, **extend the response agent's prompt** to inline `[N]` markers in the `response` field where `N` indexes `citations[N-1]`. The prompt must spell out the index alignment explicitly (e.g., "the order of items in `citations[]` matches `[1]`, `[2]`, etc. in `response` — do not reorder"), because `extractJson` doesn't enforce ordering. The retrieval agent's `relevant_ids` is already an ordered array (`objection-council.ts:62`), so the respond agent inherits a stable input order; the prompt locks the *output* order to match. Renderer parses on the way out. If parse fails per the spec above, fall back to the legacy citations-list rendering.
 
 ---
 
 ## Feature flag
 
-Per the issue acceptance criteria: the original 3-card view must be feature-flag-toggleable during the migration.
+Per the issue acceptance criteria: the original 2–3-card view must be feature-flag-toggleable during the migration. Concrete spec:
 
-- Flag: `OBJECTION_COMPOSER_V2` in `app-store` (default `true` once shipped).
-- Quick Settings popover (#88) gets a developer-only toggle if needed for support. Not user-facing — reps don't need to choose UI variants.
-- After 2 weeks of green telemetry (no spike in copy-then-edit, no spike in confidence-drilldown taps), remove the flag and the legacy renderer.
+- **Storage key:** `clientlens_objection_composer_v2` in `chrome.storage.local` (mirrors the rest of `app-store`'s persistence pattern via `useAppStore`'s persist middleware). Survives extension reload.
+- **Default:** `true` once shipped (Approach 1 is the canonical experience).
+- **Toggle surface:** No user-facing toggle. Two support-flip paths:
+  1. `chrome.storage.local.set({ clientlens_objection_composer_v2: false })` from DevTools — documented in `docs/ux/objection-composer.md` (this file) under "Support runbook."
+  2. URL param on the side panel: `?composer=v1` forces v1 for that session without mutating storage. Useful for live debugging without breaking the rep's normal flow.
+- **Removal criteria:** After 14 days from the v2 rollout, if telemetry (see #84c) shows: (a) copy-rate ≥ legacy baseline, (b) `▾ Why this answer` open-rate > 0 (proving the disclosure is reachable), (c) zero parse-fallback events in p99 → delete the legacy renderer + flag in a single commit. If any criterion misses, hold the flag, file follow-up.
+
+### Support runbook (lives here so support can find it)
+
+To force v1 for a user reporting a regression:
+```
+chrome.storage.local.set({ clientlens_objection_composer_v2: false })
+// then reload the side panel
+```
+To force v1 for one session without mutating storage: append `?composer=v1` to the side-panel URL.
 
 ---
 
 ## Follow-up implementation issues (to file after approval)
 
 1. **#84a — Prompt + parse: inline `[N]` markers** (~½ day)
-   - Update `respondAgent` system prompt to require `[N]` markers in the `response` field tied to `citations[N-1]`.
-   - Add a renderer-side parser that splits the response into text + marker tokens. Fallback to flat citations list on parse fail.
+   - Update `respondAgent` system prompt to require `[N]` markers in the `response` field tied to `citations[N-1]`; lock output order.
+   - Add a renderer-side parser per the spec in Approach 1 ("Parser fallback spec"): regex `/\[(\d+)\]/g`, discard out-of-bounds, full-fallback on >30% invalid.
+   - **Also fix:** `respondAgent` returns `agent: "icp_personalization"` (`objection-council.ts:103`, `:113`). Extend `AgentName` union with `"respond"` and correct both call sites. The disclosure in #84b depends on this.
 
 2. **#84b — Composer renderer + `Why this answer` disclosure** (~1 day)
    - Replace the 3-card layout with a single composer card.
@@ -182,11 +205,12 @@ Per the issue acceptance criteria: the original 3-card view must be feature-flag
    - **Must read** `~/Desktop/Personal/wingman-revamp/design-md/design-md/<active-skin>/DESIGN.md` before any chrome tokens or visual styling. The composer uses tokens from `sidebar/tokens.css` — no hardcoded slate-* classes.
 
 3. **#84c — Feature flag + migration** (~½ day)
-   - `OBJECTION_COMPOSER_V2` in `app-store`, defaults to `true`.
-   - Keep legacy renderer behind the flag for 2 weeks.
-   - Telemetry: copy-rate, disclosure-open-rate, time-to-copy.
+   - `clientlens_objection_composer_v2` key in `chrome.storage.local`, default `true`.
+   - `?composer=v1` URL param overrides storage for one session.
+   - Telemetry events (named, with exact shape): `objection_response_copied`, `objection_disclosure_opened`, `objection_parse_fallback` (with reason: `out_of_bounds` / `no_markers` / `parse_error`), `objection_time_to_copy_ms`.
+   - Removal commit blocked on the 14-day criteria in "Feature flag" section above.
 
-4. **#84d — (Deferred epic) Streamed response** — separate ticket, blocked on LLM client `stream()` refactor across all 5 providers.
+4. **#84d — (Deferred epic) Streamed response** — blocked NOT on transport (the LLM client already has `callStream`) but on re-shaping the agent contract. Two sub-questions to answer in the epic's own design doc: (a) single call with prose + JSON trailer, or two parallel calls? (b) how to surface partial citations to the disclosure before the prose finishes.
 
 ## Out of scope (explicit)
 
