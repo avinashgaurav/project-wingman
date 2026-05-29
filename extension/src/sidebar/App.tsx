@@ -41,7 +41,7 @@ interface TabDef {
 }
 
 export default function App() {
-  const { user, setUser, isGenerating, lastResult, error, setError, flowStep, outputMode } = useAppStore();
+  const { user, setUser, isGenerating, lastResult, error, setError, flowStep, outputMode, objectionInput } = useAppStore();
   const { detectContext } = usePageContext();
   const [adminTab, setAdminTabState] = useState<AdminTab>("form");
   const [kbCount, setKbCount] = useState(0);
@@ -143,6 +143,13 @@ export default function App() {
   const activeTab = tabs.find((t) => t.id === adminTab) ?? tabs[0];
   const activeSkin = activeTab.skin;
 
+  // CT1: live-mode applies to surfaces the rep reads mid-call —
+  // Copilot tab always, plus ObjectionPanel when a captured objection
+  // is pending. Drives `[data-mode="live"]` typography bumps in tokens.css.
+  const liveMode =
+    adminTab === "copilot" ||
+    (outputMode === "objection" && !!objectionInput?.objection_text);
+
   return (
     // Outer chrome uses the brand skin — header, tab strip, error banner.
     // Active panel below swaps its data-skin per the active tab.
@@ -181,9 +188,11 @@ export default function App() {
         </div>
       )}
 
-      {/* Active panel inherits the tab's skin via data-skin */}
+      {/* Active panel inherits the tab's skin via data-skin and the live-mode
+          typography bump via data-mode (CT1). */}
       <div
         data-skin={activeSkin}
+        data-mode={liveMode ? "live" : undefined}
         className="flex-1 overflow-y-auto px-3 py-3 space-y-3 w-full max-w-[720px] mx-auto"
         style={{ background: "var(--surface-0)", color: "var(--ink)" }}
       >

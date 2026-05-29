@@ -494,6 +494,29 @@
   background-color: var(--surface-2);
 }
 
+/* ===================================================================
+ * CT1 — Live-mode typography bump
+ * ===================================================================
+ * Applied to surfaces that need one-handed mid-call glanceability:
+ *   - Copilot tab (always)
+ *   - ObjectionPanel when active capture exists
+ *
+ * Bumps Tailwind text utilities one step up to keep 360px-sidebar
+ * legible mid-call. Inline-style font sizes (notably MeetingCopilotPanel's
+ * style constants) are intentionally out of scope — overriding inline
+ * styles needs !important, which is brittle and breaks future inline-style
+ * tweaks. If those need bumping, do it at the source.
+ *
+ * `text-xs` (12px) → 13px
+ * `text-[11px]`    → 12px
+ * `text-[10px]`    → 11px
+ * line-height      → 1.55 (was 1.5 default)
+ */
+[data-mode="live"] .text-xs { font-size: 13px; }
+[data-mode="live"] .text-\[11px\] { font-size: 12px; }
+[data-mode="live"] .text-\[10px\] { font-size: 11px; }
+[data-mode="live"] { line-height: 1.55; }
+
 /* Vercel mesh-gradient hero text fill — for landing page accent words */
 .gradient-text-vercel {
   background: linear-gradient(
