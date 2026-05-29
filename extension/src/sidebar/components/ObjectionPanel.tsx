@@ -8,12 +8,20 @@ import { parseCitationMarkers } from "../../shared/utils/objection-citations";
 // #84b: feature flag is a hardcoded constant in this PR. #84c replaces this
 // with a chrome.storage-backed hook + ?composer=v1 URL override. Keep the
 // legacy renderer compiled and reachable so a flag flip in 84c is one-line.
+//
+// NOTE FOR 84c: when this becomes a hook, the hook MUST be called at the
+// top of ObjectionPanel (React rules of hooks) — NOT inside the
+// `if (lastObjection)` branch. The constant version is safe in that
+// position only because constants aren't hooks.
 const COMPOSER_V2 = true;
 
 // Strip [N] markers when copying so reps paste a clean reply into
 // Slack/email. Markers are an in-product reasoning signal, not a deliverable.
+// Strips the marker + any trailing whitespace it introduced, but preserves
+// the whitespace that came BEFORE the marker (otherwise newlines and
+// inter-word spaces collapse).
 function stripCitationMarkers(text: string): string {
-  return text.replace(/\s*\[\d+\]/g, "");
+  return text.replace(/\[\d+\]\s*/g, "").trimEnd();
 }
 
 export function ObjectionPanel() {
@@ -173,13 +181,19 @@ function ObjectionComposer({ result, objectionText, copied, onBack, onCopy }: Re
         <ArrowLeft size={12} /> New objection
       </button>
 
-      {/* Objection recap — small, muted, no card chrome (it's reference, not action) */}
-      <p
-        className="text-[11px] italic"
-        style={{ color: "var(--ink-4)" }}
-      >
-        "{objectionText}"
-      </p>
+      {/* Objection recap — eyebrow + muted italic. The eyebrow keeps the
+          at-a-glance signal a rep who picks up the panel mid-conversation
+          needs ("what was the objection again?") without re-introducing a
+          full card. */}
+      <div>
+        <div className="eyebrow mb-1" style={{ fontSize: 9 }}>Objection</div>
+        <p
+          className="text-[11px] italic"
+          style={{ color: "var(--ink-4)" }}
+        >
+          "{objectionText}"
+        </p>
+      </div>
 
       {/* Composer card — the single visual block reps read mid-call */}
       <div
@@ -214,14 +228,19 @@ function ObjectionComposer({ result, objectionText, copied, onBack, onCopy }: Re
           className="text-xs whitespace-pre-wrap leading-relaxed"
           style={{ color: "var(--ink)" }}
         >
-          {parsed.tokens.length === 0
-            ? result.response  /* edge: empty token list — render raw */
+          {/* Branch explicitly on the parser's reason so unexpected empty
+              token lists (a future parser regression) surface as a blank
+              render, not a silent fall-through that hides token logic. */}
+          {parsed.reason === "empty_response"
+            ? null
+            : parsed.tokens.length === 0
+            ? result.response
             : parsed.tokens.map((tok, i) =>
                 tok.kind === "text" ? (
-                  <span key={i}>{tok.value}</span>
+                  <span key={`text-${i}`}>{tok.value}</span>
                 ) : (
                   <CitationChip
-                    key={i}
+                    key={`marker-${i}`}
                     index={tok.index}
                     citation={result.citations[tok.index - 1]}
                   />
@@ -308,10 +327,12 @@ function ObjectionComposer({ result, objectionText, copied, onBack, onCopy }: Re
   );
 }
 
-// Inline [N] citation chip. Uses PostHog's inline-code chip pattern
-// (surface-soft background, 2px radius, tight padding) with brand-orange
-// text. Hover/native title shows the cited quote — keyboard focus also
-// reveals it via aria-label for non-pointer users.
+// Inline [N] citation chip. Rendered as a focusable <button> so
+// keyboard-only and screen-reader users can reach the citation (aria-label
+// on a plain <span> isn't announced; title tooltips don't fire on focus).
+// Click is a no-op today — the chip exists for discovery via aria-label.
+// PostHog's inline-code chip pattern: surface-soft bg, 2px radius,
+// brand-orange numeric in monospace.
 function CitationChip({
   index,
   citation,
@@ -325,9 +346,13 @@ function CitationChip({
   if (!citation) return <span>[{index}]</span>;
   const tooltip = `${citation.source_id}: "${citation.quote}"`;
   return (
-    <span
+    <button
+      type="button"
       title={tooltip}
-      aria-label={`Citation ${index}: ${citation.source_id}`}
+      aria-label={`Citation ${index}: ${citation.source_id} — ${citation.quote}`}
+      // No onClick — the chip is read-only. We use <button> for keyboard
+      // reachability + aria-label announcement only. Cursor is `help` to
+      // match the read-only intent.
       style={{
         display: "inline-flex",
         alignItems: "baseline",
@@ -346,7 +371,7 @@ function CitationChip({
       }}
     >
       {index}
-    </span>
+    </button>
   );
 }
 
