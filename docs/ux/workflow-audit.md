@@ -111,7 +111,7 @@ Today's flow has Prospect (3 fields + URL lookup), Meeting context (2 fields), A
 #### Change 1.1 — Pre-call mode = "minimum viable Start"
 
 - **What:** Render only `company` + `persona` + the meeting-URL input on cold-start. Everything else (agenda, meeting title, meeting notes) collapses behind a `▾ More context (optional)` disclosure.
-- **Why:** The orchestrator already works with just `{company_name, persona_role}` (`MeetingCopilotPanel.tsx:431` — `readyToStart = companyName.trim() && personaRole.trim()`). The rest is enhancement. Default to the minimum that works.
+- **Why:** The Start button gate is `readyToStart = companyName.trim() && personaRole.trim()` (`MeetingCopilotPanel.tsx:431`). That's the button-gate only — the orchestrator separately needs a resolved Meet tab ID (`startSession()` at `:240` calls `chrome.tabs.query` for `https://meet.google.com/*` and tolerates a missing tab by running the copilot in-panel only). The disclosure proposal still holds: agenda + meeting context aren't required for any code path; they're enhancement.
 - **Files:** `extension/src/sidebar/components/MeetingCopilotPanel.tsx` — wrap the Meeting context + Agenda blocks in a disclosure component. Persist the expanded/collapsed state per-session so the rep doesn't recollapse mid-flow.
 - **Effort:** ~½ day.
 
@@ -126,21 +126,22 @@ Today's flow has Prospect (3 fields + URL lookup), Meeting context (2 fields), A
 
 - **What:** When the Meet tab closes (`chrome.tabs.onRemoved`), automatically transition session to `ended` and fire `generatePostCallSummary` if there's transcript content. Today the rep has to remember to hit "End session & summarize."
 - **Why:** Reps close Meet at the end of a call and immediately context-switch. The current "go back to the sidebar and click End" step has a non-zero drop-off — sessions sit in `listening` state forever. Telemetry would prove it; the prior is high.
-- **Files:** `extension/src/sidebar/hooks/useMeetDetection.ts` (already wires `chrome.tabs.onRemoved`) + `MeetingCopilotPanel.tsx` (subscribe to a "meet-tab-closed" event from the hook, mirror what `stopSession()` does).
-- **Effort:** ~½ day, including handling the race where the rep stops manually first.
+- **Files & wiring:** `useMeetDetection.ts` today only returns a `boolean` (`hasMeetTab`) — it does not emit a tab-closed event. Two options: (a) extend the hook's return shape with an `onTabClosed` callback registration; or (b) in `MeetingCopilotPanel`, add a `useEffect` watching `hasMeetTab` for `true → false` transitions during an active session, then trigger the existing `stopSession()` logic. Option (b) is the smaller diff. Either way the hook IS the right surface — but the wiring is non-trivial, not "subscribe to an existing event."
+- **Effort:** ~¾ day (revised up from ½). Includes the boolean-transition logic + handling the race where the rep stops manually first + verifying the auto-stop doesn't double-fire on tab refresh (which also flips `hasMeetTab` momentarily).
 
 #### Change 1.4 — Recent-calls chip drives `meetingNotes` carry-forward
 
 - **What:** When a rep clicks a "Recent calls" chip, pre-fill `meetingNotes` with the saved summary's "Action items" + "Suggested follow-up email" so the *next* call inherits the carry-over context automatically.
-- **Why:** Closes the loop: this call's output → next call's input. Today the chip pre-fills only `company`, `persona`, and the full markdown into `notes` — but the markdown is the whole transcript dump, way too much. Slicing to action items + follow-up is the actually-useful subset.
-- **Files:** `MeetingCopilotPanel.tsx:584` — replace `setMeetingNotes(h.summary_markdown)` with `setMeetingNotes(extractCarryForward(h))`. New helper in `extension/src/sidebar/utils/`.
+- **Why:** Closes the loop: this call's output → next call's input. Today the chip pre-fills `company`, `persona` (`:585–586`), and the full markdown into `notes` (`:587`) — but the markdown is the whole transcript dump, way too much. Slicing to action items + follow-up is the actually-useful subset.
+- **Files:** `MeetingCopilotPanel.tsx:587` — replace `setMeetingNotes(h.summary_markdown)` with `setMeetingNotes(extractCarryForward(h))`. New helper in `extension/src/sidebar/utils/`.
+- **Caveat:** `summary_markdown` has no enforced structure — it's whatever `summaryToMarkdown()` (`:948`) produces. The helper must regex-match the `## Action items` / `## Suggested follow-up email` section headers and **fall back to the full `summary_markdown`** if either header is absent (e.g., if the summary template changes or the rep had no action items). Silent degradation is worse than the current verbose behavior.
 - **Effort:** ~¼ day.
 
 #### Change 1.5 — Persistent transponder status → toast instead of inline
 
 - **What:** "Transponder opened on the Meet tab." should be a 3s toast, not a persistent inline message. After 30 calls the rep stops needing to see it.
-- **Files:** `MeetingCopilotPanel.tsx:683` — replace inline render with a toast call.
-- **Effort:** Trivial, ~½ day if no toast component exists yet (need to add one). Skip if not worth the new component.
+- **Files:** `MeetingCopilotPanel.tsx:683` — replace inline render with a toast call. **No toast component exists in the codebase today** — this change brings one in (plus a host + portal at the root of `App.tsx`).
+- **Effort:** ~½ day, including adding a minimal toast primitive. Defer if not worth the new component.
 
 **Sub-issues to file for W4:**
 - `UX: Copilot — collapse meeting-context + agenda behind "More context" disclosure (#79b)`
@@ -161,8 +162,9 @@ Today's cold-start lands on Generate (empty form). The rep's first impression is
 
 #### Change 2.1 — First-install auto-loads sample data + lands on Copilot
 
+- **⚠️ Deliberate override of a locked decision:** `86-first-run.md` selected Option C (opt-in toggle in Settings) as the chosen path, and that doc is listed as inherited. This change **upgrades opt-in → opt-out for first install only**. Requires explicit ratification before any sub-issue is filed — the override is documented here, not buried.
 - **What:** On first install (detected via absence of a `clientlens_install_seen` storage key), automatically `loadSampleData()` + switch the default tab to Copilot + show the `CopilotEmptyState` hero with the sample-data already loaded message. Set the flag so subsequent opens land normally.
-- **Why:** Sample data already exists (#94/#95). It's behind a toggle that first-time reps will never find before churning. The hybrid recommendation in `86-first-run.md` was Option C (opt-in toggle) — this proposal upgrades it to **opt-out** for the first install only. Rationale: opt-out beats opt-in for demonstration; the rep can clear it in two clicks from Quick Settings.
+- **Why:** Sample data already exists (#94/#95). It's behind a toggle that first-time reps will never find before churning. Opt-in is being beaten by churn — opt-out (with a prominent dismissal/clear path) demonstrates value in 0 clicks instead of N clicks-to-discover. Rep can clear in two clicks from Quick Settings; the welcome banner (Change 2.2) tells them where.
 - **Files:**
   - `extension/src/sidebar/App.tsx` — `useEffect` on mount: check `chrome.storage.local.get('clientlens_install_seen')`, if missing → load sample, set tab to copilot, set flag.
   - `extension/src/shared/utils/sample-data.ts` — already idempotent; safe to call. Add a "first-install" telemetry event.
@@ -181,8 +183,8 @@ Today's cold-start lands on Generate (empty form). The rep's first impression is
 - **What:** The OnboardingChecklist renders above every tab today. On first-install with sample data, this is doubly redundant — the rep should be *exploring*, not seeing a "Add your first KB entry" checklist with sample KB already loaded.
 - Move the checklist to a collapsible drawer at the **bottom** of the side panel, not the top. When complete (per #80), it collapses to a pill in the header.
 - **Why:** Real estate at the top of a 360px panel is the most-valuable surface. The checklist is reference, not action.
-- **Files:** `extension/src/sidebar/components/OnboardingChecklist.tsx` (re-style as bottom drawer) + `App.tsx:200` (move below the panel content).
-- **Effort:** ~½ day. Note: this re-locates a shipped feature — verify no regression in #80's pill-when-complete behavior.
+- **Files:** `extension/src/sidebar/components/OnboardingChecklist.tsx` (re-style as bottom drawer — likely `position: sticky; bottom: 0` inside the scroll container, OR a separate flex row outside the scroll container, OR a portal to body) + `App.tsx:200` (move below the panel content; if using sticky, may need to restructure the flex column at `:149`).
+- **Effort:** ~¾ day (revised up from ½). The layout at 360px with a scroll-container panel is the actual cost — naive bottom-of-flow render will scroll off-screen with content; sticky positioning requires touching the parent flex grid. **Must regression-test the #80 pill-when-complete behavior** before merging — that's the bigger risk than the layout itself.
 
 **Sub-issues to file for W1:**
 - `UX: First-install — auto-load sample + land on Copilot, opt-out (#86b)`
@@ -201,7 +203,7 @@ The objection-composer design doc (#111) covers the response-side UX. This secti
 
 - **What:** Objection is not a Generate workflow. Remove "objection" from `ModeSwitcher` (Generate tab's pitch/email/objection sub-selector). The only entry to ObjectionPanel becomes the right-click context menu (already wired) + a new keyboard shortcut.
 - **Why:** Hosting a mid-call real-time workflow under the "Generate" tab fights the IA. Reps mid-call who land on the Generate tab will see "objection" as a sub-mode and assume that's the right place, then have to switch sub-modes — a step they don't have time for.
-- **Files:** `extension/src/sidebar/components/ModeSwitcher.tsx` (remove option) + `App.tsx:223` (remove `outputMode === "objection"` render path). The Objection panel still lives — it's reached only via context-menu capture or the keyboard shortcut below.
+- **Files:** `extension/src/sidebar/components/ModeSwitcher.tsx` (remove option) + `App.tsx:223` (remove `outputMode === "objection"` render path) + **`extension/src/sidebar/stores/app-store.ts`**: audit the initial value of `outputMode` and the setter — if it ever lands on `"objection"` by default, change to `"pitch"` and tighten the `OutputMode` union to drop `"objection"`. Otherwise the tab will silently render nothing on cold-start when something writes `"objection"` to storage. The Objection panel still lives — it's reached only via context-menu capture or the keyboard shortcut below.
 - **Effort:** ~½ day. Telemetry: confirm the in-Generate-tab path was rarely used before deleting (or feature-flag it for a transition).
 
 #### Change 3.2 — Add keyboard shortcut for objection capture
@@ -211,7 +213,7 @@ The objection-composer design doc (#111) covers the response-side UX. This secti
   2. Stash it into `chrome.storage.session` under `pending_objection` (matches the existing context-menu pattern at `ObjectionPanel.tsx:23`).
   3. Open the side panel programmatically + send `OBJECTION_CAPTURE` runtime message.
 - **Why:** Mid-call reps live on the keyboard. Right-click → menu navigate is 2–3 seconds of mouse work. Shortcut is one chord.
-- **Files:** `extension/public/manifest.json` (add `commands` declaration) + `extension/src/background/service-worker.ts` (handle `chrome.commands.onCommand`) + verify the existing `OBJECTION_CAPTURE` handler at `ObjectionPanel.tsx:32`.
+- **Files:** `extension/public/manifest.json` — add both `"commands"` (the keyboard shortcut declaration) and verify `"scripting"` is in `"permissions"` (required for `chrome.scripting.executeScript`; check it's present, add if not). Plus `extension/src/background/service-worker.ts` (handle `chrome.commands.onCommand`) + verify the existing `OBJECTION_CAPTURE` handler at `ObjectionPanel.tsx:32`.
 - **Effort:** ~1 day. Coordinated change across manifest + service worker + content script (the selected-text fetch is the trickiest because the active tab might not be an HTTP page).
 
 #### Change 3.3 — Objection panel pre-warms on capture
