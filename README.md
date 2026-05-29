@@ -106,10 +106,10 @@ A purpose-built mid-call surface for "the prospect just said X, what do I say?"
 - **2-agent pipeline:**
   - **Retrieval Agent** — pulls the most relevant battlecard / case study / compliance entries from your KB.
   - **Respond Agent** — drafts a 60–120 word grounded reply, emitting inline `[N]` citation markers tied to each cited claim.
-- **Composer renderer** — single card. Inline `[N]` chips render next to each supporting claim; hover/keyboard-focus shows the source quote. `Copy reply` strips the markers so paste-into-Slack stays clean.
+- **Composer renderer** — single card. Inline `[N]` chips render next to each supporting claim; hover shows the source quote in a tooltip, and screen readers announce the source + quote via `aria-label` on Tab focus. `Copy reply` strips the markers so paste-into-Slack stays clean.
 - **▾ Why this answer disclosure** — collapsed by default for mid-call use. Expands for post-call review, showing each citation with its source and exact quote.
 - **Parse-fail safety net** — if the LLM emits malformed markers (out-of-bounds, too many invalid), the renderer falls back to a flat citations card so the rep never sees a broken response. Telemetry tracks the fallback rate.
-- **Feature flag** — `clientlens_objection_composer_v2` in `chrome.storage.local` (default `true`). `?composer=v1` URL param forces the legacy renderer for one session — useful for live support debugging without mutating storage.
+- **Feature flag** — `clientlens_objection_composer_v2` in `chrome.storage.local` (default `true`). `?composer=v1` URL param forces the legacy renderer for one panel lifetime — useful for live debugging. Note: Chrome side panels reset to the manifest `default_path` on re-open, so URL params don't survive closing and reopening the panel. For a sticky override, use `chrome.storage.local.set({clientlens_objection_composer_v2: false})`.
 
 ### 4. Email Council
 
