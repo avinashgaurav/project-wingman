@@ -32,12 +32,29 @@ export interface ParsedResponse {
   /** True when the full-fallback path fires (renderer skips inline chips). */
   parseFallback: boolean;
   /** Diagnostic reason for telemetry (#84c). One of:
-   *  - `"ok"` — markers detected and parsed cleanly
-   *  - `"no_markers"` — zero markers + non-empty citations
-   *  - `"out_of_bounds"` — too many invalid markers
-   *  - `"empty_response"` — response is blank
-   *  - `"no_citations"` — citations array empty (no point in inline chips) */
-  reason: "ok" | "no_markers" | "out_of_bounds" | "empty_response" | "no_citations";
+   *  - `"ok"` — every detected marker resolved to a valid citation; no
+   *             literal `[N]` text fell out of the bounds check.
+   *  - `"ok_with_literals"` — markers detected; some were out-of-bounds
+   *             but under the 30% threshold, so they were kept as literal
+   *             `[N]` text in the prose. Renderer behavior is unchanged
+   *             from `"ok"`, but telemetry uses this to flag partial
+   *             LLM-prompt-following degradation.
+   *  - `"no_markers"` — zero markers detected, citations is non-empty.
+   *             Fallback to legacy renderer.
+   *  - `"out_of_bounds"` — >30% of detected markers were invalid. Full
+   *             fallback to legacy renderer.
+   *  - `"empty_response"` — response field was blank. parseFallback is
+   *             intentionally FALSE here (no fallback semantics apply to
+   *             a blank response — render nothing).
+   *  - `"no_citations"` — citations array was empty. Render response
+   *             literally with no chips. Not a fallback. */
+  reason:
+    | "ok"
+    | "ok_with_literals"
+    | "no_markers"
+    | "out_of_bounds"
+    | "empty_response"
+    | "no_citations";
 }
 
 const MARKER_RE = /\[(\d+)\]/g;
@@ -108,6 +125,7 @@ export function parseCitationMarkers({ response, citations }: ParseInputs): Pars
   // markers within tolerance are kept as literal `[N]` text per rule 1.
   const tokens: CitationToken[] = [];
   let cursor = 0;
+  let literalsKept = 0;
   for (const mm of matches) {
     if (mm.pos > cursor) {
       tokens.push({ kind: "text", value: response.slice(cursor, mm.pos) });
@@ -122,6 +140,7 @@ export function parseCitationMarkers({ response, citations }: ParseInputs): Pars
       // Out-of-bounds: keep the literal `[N]` text in the prose. The
       // renderer paints it without a chip.
       tokens.push({ kind: "text", value: mm.raw });
+      literalsKept += 1;
     }
     cursor = mm.pos + mm.len;
   }
@@ -129,5 +148,9 @@ export function parseCitationMarkers({ response, citations }: ParseInputs): Pars
     tokens.push({ kind: "text", value: response.slice(cursor) });
   }
 
-  return { tokens, parseFallback: false, reason: "ok" };
+  return {
+    tokens,
+    parseFallback: false,
+    reason: literalsKept > 0 ? "ok_with_literals" : "ok",
+  };
 }

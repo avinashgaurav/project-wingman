@@ -94,8 +94,10 @@ Return JSON:
                               // Inline [N] markers REQUIRED on every supporting
                               // claim — [1] for citations[0], [2] for citations[1],
                               // etc. The order of items in citations[] MUST match
-                              // the order of [N] markers in response; do not
-                              // reorder. Use each marker at least once.
+                              // the order of [N] markers in response; the renderer
+                              // resolves [N] by INDEX into citations[], not by
+                              // source_id, so a mismatch points a chip at the
+                              // wrong source. Use each marker at least once.
   "citations": [{"source_id": "...", "quote": "exact quote from sources"}],
   "confidence": 0.0          // 0-1 based on source coverage
 }`;
@@ -105,8 +107,7 @@ Return JSON:
 
   if (!parsed?.response) {
     return {
-      // #84a: was "icp_personalization" (cross-wired from email-council
-      // copy-paste); the objection respond agent is its own role.
+      // #84a: corrected from "icp_personalization" (copy-paste from email-council).
       agent: "respond",
       status: "fail",
       output: { error: "no response produced" },
