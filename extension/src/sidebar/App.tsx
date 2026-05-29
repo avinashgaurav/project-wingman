@@ -41,7 +41,7 @@ interface TabDef {
 }
 
 export default function App() {
-  const { user, setUser, isGenerating, lastResult, error, setError, flowStep, outputMode, objectionInput } = useAppStore();
+  const { user, setUser, isGenerating, lastResult, error, setError, flowStep, outputMode } = useAppStore();
   const { detectContext } = usePageContext();
   const [adminTab, setAdminTabState] = useState<AdminTab>("form");
   const [kbCount, setKbCount] = useState(0);
@@ -144,11 +144,16 @@ export default function App() {
   const activeSkin = activeTab.skin;
 
   // CT1: live-mode applies to surfaces the rep reads mid-call —
-  // Copilot tab always, plus ObjectionPanel when a captured objection
-  // is pending. Drives `[data-mode="live"]` typography bumps in tokens.css.
-  const liveMode =
-    adminTab === "copilot" ||
-    (outputMode === "objection" && !!objectionInput?.objection_text);
+  // Copilot tab always, plus the objection mode (ObjectionPanel rendered).
+  // Drives `[data-mode="live"]` typography bumps in tokens.css.
+  //
+  // Gate is `outputMode === "objection"` alone — NOT
+  // `objectionInput?.objection_text`. Why: `objectionInput` is populated
+  // asynchronously from chrome.storage.session in ObjectionPanel:23, so on
+  // the first render after a context-menu capture the input is still null
+  // and the panel would briefly snap from normal size to live size. Gate on
+  // outputMode so the typography is correct from the first paint.
+  const liveMode = adminTab === "copilot" || outputMode === "objection";
 
   return (
     // Outer chrome uses the brand skin — header, tab strip, error banner.
