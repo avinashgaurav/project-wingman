@@ -1,8 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Shield, Copy, ArrowLeft, Zap, AlertTriangle } from "lucide-react";
 import { useAppStore } from "../stores/app-store";
 import { useObjection } from "../hooks/useObjection";
-import type { ObjectionInput } from "../../shared/types";
+import type { ObjectionInput, ObjectionResponse } from "../../shared/types";
+import { parseCitationMarkers } from "../../shared/utils/objection-citations";
+
+// #84b: feature flag is a hardcoded constant in this PR. #84c replaces this
+// with a chrome.storage-backed hook + ?composer=v1 URL override. Keep the
+// legacy renderer compiled and reachable so a flag flip in 84c is one-line.
+const COMPOSER_V2 = true;
+
+// Strip [N] markers when copying so reps paste a clean reply into
+// Slack/email. Markers are an in-product reasoning signal, not a deliverable.
+function stripCitationMarkers(text: string): string {
+  return text.replace(/\s*\[\d+\]/g, "");
+}
 
 export function ObjectionPanel() {
   const {
@@ -52,49 +64,28 @@ export function ObjectionPanel() {
 
   async function copyResponse() {
     if (!lastObjection) return;
-    await navigator.clipboard.writeText(lastObjection.response);
+    await navigator.clipboard.writeText(stripCitationMarkers(lastObjection.response));
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }
 
   if (lastObjection) {
-    return (
-      <div className="space-y-3">
-        <button onClick={() => setLastObjection(null)} className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1">
-          <ArrowLeft size={12} /> New objection
-        </button>
-
-        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3 space-y-2">
-          <span className="text-[10px] uppercase tracking-wide text-slate-500">Objection</span>
-          <p className="text-xs text-slate-400 italic">"{objectionInput?.objection_text}"</p>
-        </div>
-
-        <div className="bg-violet-900/20 border border-violet-700/40 rounded-xl p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase tracking-wide text-violet-300">Grounded response</span>
-            <span className="text-[10px] text-slate-400">conf {Math.round(lastObjection.confidence * 100)}%</span>
-          </div>
-          {lastObjection.summary && (
-            <p className="text-[11px] text-slate-400 italic">{lastObjection.summary}</p>
-          )}
-          <p className="text-xs text-slate-100 whitespace-pre-wrap leading-relaxed">{lastObjection.response}</p>
-        </div>
-
-        {lastObjection.citations.length > 0 && (
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3 space-y-1.5">
-            <span className="text-[10px] uppercase tracking-wide text-slate-500">Citations ({lastObjection.citations.length})</span>
-            {lastObjection.citations.slice(0, 4).map((c, i) => (
-              <p key={i} className="text-[10px] text-slate-400">
-                <span className="text-slate-500">{c.source_id}:</span> "{c.quote}"
-              </p>
-            ))}
-          </div>
-        )}
-
-        <button onClick={copyResponse} className="w-full py-2 rounded-lg text-xs font-medium bg-violet-600 hover:bg-violet-500 text-white flex items-center justify-center gap-1.5">
-          <Copy size={12} /> {copied ? "Copied" : "Copy response"}
-        </button>
-      </div>
+    return COMPOSER_V2 ? (
+      <ObjectionComposer
+        result={lastObjection}
+        objectionText={objectionInput?.objection_text ?? ""}
+        copied={copied}
+        onBack={() => setLastObjection(null)}
+        onCopy={copyResponse}
+      />
+    ) : (
+      <LegacyObjectionResult
+        result={lastObjection}
+        objectionText={objectionInput?.objection_text ?? ""}
+        copied={copied}
+        onBack={() => setLastObjection(null)}
+        onCopy={copyResponse}
+      />
     );
   }
 
@@ -141,6 +132,264 @@ export function ObjectionPanel() {
         className="w-full py-2.5 bg-violet-600 hover:bg-violet-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
       >
         <Zap size={14} /> Get grounded response
+      </button>
+    </div>
+  );
+}
+
+// #84b: ObjectionComposer (the v2 renderer).
+// Single token-aware card. Inline [N] chips render where the response agent
+// emitted markers; the rest is body text. A `▾ Why this answer` disclosure
+// appears below for post-call review (retrieval picks + citation quotes).
+// Falls back to the legacy "flat citations card" when the parser flags
+// parseFallback (out-of-bounds or no-markers per shared/utils/objection-citations).
+//
+// Tokens here are token-system values (#102 explicitly does the legacy chrome
+// migration; this new code is token-correct out of the gate). PostHog
+// DESIGN.md was read before drafting this — surface-card on cream, hairline
+// border, no shadow, inline-code chip pattern for [N] markers.
+interface ResultProps {
+  result: ObjectionResponse;
+  objectionText: string;
+  copied: boolean;
+  onBack: () => void;
+  onCopy: () => void;
+}
+
+function ObjectionComposer({ result, objectionText, copied, onBack, onCopy }: ResultProps) {
+  const parsed = useMemo(
+    () => parseCitationMarkers({ response: result.response, citations: result.citations }),
+    [result.response, result.citations],
+  );
+  const confidencePct = Math.round(result.confidence * 100);
+
+  return (
+    <div className="space-y-3">
+      <button
+        onClick={onBack}
+        className="text-xs flex items-center gap-1"
+        style={{ color: "var(--ink-3)" }}
+      >
+        <ArrowLeft size={12} /> New objection
+      </button>
+
+      {/* Objection recap — small, muted, no card chrome (it's reference, not action) */}
+      <p
+        className="text-[11px] italic"
+        style={{ color: "var(--ink-4)" }}
+      >
+        "{objectionText}"
+      </p>
+
+      {/* Composer card — the single visual block reps read mid-call */}
+      <div
+        style={{
+          background: "var(--surface-1)",
+          border: "1px solid var(--line)",
+          borderRadius: 6,
+          padding: 16,
+        }}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <span className="eyebrow" style={{ fontSize: 10 }}>Reply</span>
+          <span
+            className="text-[11px] tabular-nums"
+            style={{ color: "var(--ink-3)" }}
+            title="Confidence based on source coverage"
+          >
+            {confidencePct}% conf
+          </span>
+        </div>
+
+        {result.summary && (
+          <p
+            className="text-[11px] mb-2 italic"
+            style={{ color: "var(--ink-3)" }}
+          >
+            {result.summary}
+          </p>
+        )}
+
+        <p
+          className="text-xs whitespace-pre-wrap leading-relaxed"
+          style={{ color: "var(--ink)" }}
+        >
+          {parsed.tokens.length === 0
+            ? result.response  /* edge: empty token list — render raw */
+            : parsed.tokens.map((tok, i) =>
+                tok.kind === "text" ? (
+                  <span key={i}>{tok.value}</span>
+                ) : (
+                  <CitationChip
+                    key={i}
+                    index={tok.index}
+                    citation={result.citations[tok.index - 1]}
+                  />
+                ),
+              )}
+        </p>
+
+        {/* Parser fell back to flat citations OR there are citations but no
+            inline markers — render the legacy citations card so the rep
+            still has source accountability. */}
+        {parsed.parseFallback && result.citations.length > 0 && (
+          <div
+            className="mt-3 pt-3"
+            style={{ borderTop: "1px solid var(--line-2)" }}
+          >
+            <div className="eyebrow mb-1.5" style={{ fontSize: 9 }}>
+              Citations ({result.citations.length})
+            </div>
+            {result.citations.slice(0, 4).map((c, i) => (
+              <p
+                key={i}
+                className="text-[10px] mb-0.5"
+                style={{ color: "var(--ink-3)" }}
+              >
+                <span style={{ color: "var(--ink-4)" }}>{c.source_id}:</span> "{c.quote}"
+              </p>
+            ))}
+          </div>
+        )}
+
+        {/* "▾ Why this answer" disclosure — only when parse succeeded AND
+            there are citations. Default collapsed — mid-call rep doesn't
+            need to see it. Expands post-call for review. */}
+        {!parsed.parseFallback && result.citations.length > 0 && (
+          <details
+            className="mt-3 pt-3 group"
+            style={{ borderTop: "1px solid var(--line-2)" }}
+          >
+            <summary
+              className="cursor-pointer text-[11px] font-semibold flex items-center gap-1.5 list-none"
+              style={{ color: "var(--ink-3)" }}
+            >
+              <span aria-hidden="true" className="inline-block transition-transform group-open:rotate-90">▸</span>
+              Why this answer ({result.citations.length}{" "}
+              {result.citations.length === 1 ? "source" : "sources"})
+            </summary>
+            <div className="mt-2 space-y-1.5">
+              {result.citations.map((c, i) => (
+                <div key={i} className="text-[11px]" style={{ color: "var(--ink-3)" }}>
+                  <span
+                    className="font-mono mr-1.5"
+                    style={{ color: "var(--brand-orange)", fontSize: 10 }}
+                  >
+                    [{i + 1}]
+                  </span>
+                  <span style={{ color: "var(--ink-4)" }}>{c.source_id}</span>
+                  <span
+                    className="block ml-6 mt-0.5 italic"
+                    style={{ color: "var(--ink-3)" }}
+                  >
+                    "{c.quote}"
+                  </span>
+                </div>
+              ))}
+            </div>
+          </details>
+        )}
+      </div>
+
+      <button
+        onClick={onCopy}
+        className="w-full py-2 text-xs font-semibold flex items-center justify-center gap-1.5"
+        style={{
+          background: "var(--brand-orange)",
+          color: "#0A0A0A",
+          borderRadius: 6,
+          border: "none",
+          cursor: "pointer",
+        }}
+      >
+        <Copy size={12} /> {copied ? "Copied" : "Copy reply"}
+      </button>
+    </div>
+  );
+}
+
+// Inline [N] citation chip. Uses PostHog's inline-code chip pattern
+// (surface-soft background, 2px radius, tight padding) with brand-orange
+// text. Hover/native title shows the cited quote — keyboard focus also
+// reveals it via aria-label for non-pointer users.
+function CitationChip({
+  index,
+  citation,
+}: {
+  index: number;
+  citation?: { source_id: string; quote: string };
+}) {
+  // Citation can be undefined if the parser kept a marker as literal `[N]`
+  // text (out-of-bounds). The renderer never reaches this branch in that
+  // case — the parser emits a text token instead. Guard defensively.
+  if (!citation) return <span>[{index}]</span>;
+  const tooltip = `${citation.source_id}: "${citation.quote}"`;
+  return (
+    <span
+      title={tooltip}
+      aria-label={`Citation ${index}: ${citation.source_id}`}
+      style={{
+        display: "inline-flex",
+        alignItems: "baseline",
+        background: "var(--surface-2)",
+        border: "1px solid var(--line-2)",
+        color: "var(--brand-orange)",
+        fontFamily: "ui-monospace, 'JetBrains Mono', monospace",
+        fontSize: "0.85em",
+        fontWeight: 600,
+        padding: "0 5px",
+        margin: "0 2px",
+        borderRadius: 2,
+        cursor: "help",
+        verticalAlign: "baseline",
+        lineHeight: 1.2,
+      }}
+    >
+      {index}
+    </span>
+  );
+}
+
+// #84b: legacy renderer kept reachable for the 84c flag flip. Preserves
+// the pre-composer 3-card layout exactly. Hardcoded slate/violet classes
+// stay until #102 migrates them (intentionally out of scope here — this
+// is the v1 we're replacing, not improving).
+function LegacyObjectionResult({ result, objectionText, copied, onBack, onCopy }: ResultProps) {
+  return (
+    <div className="space-y-3">
+      <button onClick={onBack} className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1">
+        <ArrowLeft size={12} /> New objection
+      </button>
+
+      <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3 space-y-2">
+        <span className="text-[10px] uppercase tracking-wide text-slate-500">Objection</span>
+        <p className="text-xs text-slate-400 italic">"{objectionText}"</p>
+      </div>
+
+      <div className="bg-violet-900/20 border border-violet-700/40 rounded-xl p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] uppercase tracking-wide text-violet-300">Grounded response</span>
+          <span className="text-[10px] text-slate-400">conf {Math.round(result.confidence * 100)}%</span>
+        </div>
+        {result.summary && (
+          <p className="text-[11px] text-slate-400 italic">{result.summary}</p>
+        )}
+        <p className="text-xs text-slate-100 whitespace-pre-wrap leading-relaxed">{result.response}</p>
+      </div>
+
+      {result.citations.length > 0 && (
+        <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3 space-y-1.5">
+          <span className="text-[10px] uppercase tracking-wide text-slate-500">Citations ({result.citations.length})</span>
+          {result.citations.slice(0, 4).map((c, i) => (
+            <p key={i} className="text-[10px] text-slate-400">
+              <span className="text-slate-500">{c.source_id}:</span> "{c.quote}"
+            </p>
+          ))}
+        </div>
+      )}
+
+      <button onClick={onCopy} className="w-full py-2 rounded-lg text-xs font-medium bg-violet-600 hover:bg-violet-500 text-white flex items-center justify-center gap-1.5">
+        <Copy size={12} /> {copied ? "Copied" : "Copy response"}
       </button>
     </div>
   );
