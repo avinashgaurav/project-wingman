@@ -211,8 +211,6 @@ export default function App() {
 
         <SampleDataBanner />
 
-        <OnboardingChecklist kbCount={kbCount} onOpenSettings={openSettings} />
-
         {(!showTabs || adminTab === "form") && (
           <>
             <ModeSwitcher />
@@ -253,6 +251,20 @@ export default function App() {
         {copilotOn && adminTab === "copilot" && <MeetingCopilotPanel />}
 
         {adminTab === "insights" && <InsightsPanel />}
+
+        {/* #50 / 2.3: OnboardingChecklist moved from the TOP of every tab
+            (where it ate the most-valuable real estate at 360px) to the
+            BOTTOM of the scroll container. Reps see panel content first;
+            the checklist becomes reference rather than action. The
+            pill-when-complete behavior (#80) is preserved verbatim — the
+            component itself decides whether to render as a card or pill
+            based on `allDone` state; we just moved WHERE it renders.
+
+            Sticky-bottom positioning was considered but rejected — it
+            requires restructuring the parent flex column and risks #80
+            regression. If "stays visible while scrolling" becomes
+            important, file a follow-up. */}
+        <OnboardingChecklist kbCount={kbCount} onOpenSettings={openSettings} />
       </div>
     </div>
   );
