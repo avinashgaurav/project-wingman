@@ -12,6 +12,13 @@ import { track } from "../../shared/utils/telemetry";
 // Strips the marker + any trailing whitespace it introduced, but preserves
 // the whitespace that came BEFORE the marker (otherwise newlines and
 // inter-word spaces collapse).
+//
+// Edge: for adjacent markers like "text [1] [2] more", the first match's
+// `\s*` consumes the space between [1] and [2], so the output is
+// "text more" with one space (not two). This is acceptable for copy —
+// the prose still reads cleanly. If a future spec wants exact spacing
+// preservation, replace with a two-pass: strip markers first, then
+// collapse runs of whitespace to single spaces.
 function stripCitationMarkers(text: string): string {
   return text.replace(/\[\d+\]\s*/g, "").trimEnd();
 }

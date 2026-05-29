@@ -24,6 +24,12 @@ import { useEffect, useState } from "react";
 
 export const OBJECTION_COMPOSER_V2_KEY = "clientlens_objection_composer_v2";
 
+// NOTE: Chrome side panels may NOT preserve query params across panel
+// re-opens. `chrome.sidePanel.open()` opens the configured `default_path`
+// from manifest.json, which is fixed — query params baked into the URL at
+// first open will be lost on a subsequent open. So `?composer=v1` works
+// reliably ONLY for the duration of a single panel lifetime. For sticky
+// overrides, use `chrome.storage.local.set` instead.
 function readUrlOverride(): boolean | null {
   try {
     const params = new URLSearchParams(window.location.search);
