@@ -532,7 +532,7 @@ The product handles OAuth tokens, transcripts, and an org-wide KB — security p
 | Speech-to-Text | Deepgram Nova-2 (real-time streaming) |
 | Document generation | Google Slides API, Google Drive API |
 | Observability | structlog (backend) |
-| Deployment | Railway / Render / Fly.io (backend), unpacked load today (extension). A Chrome Web Store listing is planned, not yet published |
+| Deployment | **v1.0: run the backend locally** (`uvicorn` on localhost). Railway / Render / Fly.io are supported targets in the code, but a public deployment is unsafe until auth is wired, because `DEV_MODE` accepts every request as an admin. Extension: unpacked load; no Chrome Web Store listing yet |
 
 ---
 
