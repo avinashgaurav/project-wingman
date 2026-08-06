@@ -21,8 +21,10 @@ from PIL import Image, ImageDraw, ImageFont
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUT_PATH = REPO_ROOT / "landing" / "og.png"
+THUMB_PATH = REPO_ROOT / "docs" / "launch" / "assets" / "ph-thumbnail-240.png"
 
 WIDTH, HEIGHT = 1200, 630
+THUMB_SIZE = 240
 BLACK = "#000000"
 WHITE = "#FFFFFF"
 ORANGE = "#F58549"
@@ -109,6 +111,53 @@ def main() -> None:
     img.save(OUT_PATH, "PNG", optimize=True)
     size_kb = OUT_PATH.stat().st_size / 1024
     print(f"wrote {OUT_PATH.relative_to(REPO_ROOT)} ({WIDTH}x{HEIGHT}, {size_kb:.0f} KB)")
+
+    make_thumbnail(sans, mono)
+
+
+def make_thumbnail(sans: Path, mono: Path) -> None:
+    """Square launch thumbnail. Product Hunt requires one and crops to a circle
+    in some placements, so the mark stays well inside a safe centre area."""
+    img = Image.new("RGB", (THUMB_SIZE, THUMB_SIZE), BLACK)
+    draw = ImageDraw.Draw(img)
+
+    # A single glyph reads at 40px; a wordmark does not. "W" plus the orange
+    # underscore echoes the landing hero's accent.
+    mark = load(sans, 132, "Bold")
+    box = draw.textbbox((0, 0), "W", font=mark)
+    draw.text(
+        ((THUMB_SIZE - (box[2] - box[0])) / 2 - box[0], 44),
+        "W",
+        font=mark,
+        fill=WHITE,
+    )
+
+    # Accent rule under the mark, centred.
+    rule_w = 84
+    draw.rectangle(
+        [
+            ((THUMB_SIZE - rule_w) / 2, 176),
+            ((THUMB_SIZE + rule_w) / 2, 182),
+        ],
+        fill=ORANGE,
+    )
+
+    label = load(mono, 15)
+    text = "WINGMAN"
+    draw.text(
+        ((THUMB_SIZE - draw.textlength(text, font=label)) / 2, 198),
+        text,
+        font=label,
+        fill=DIM,
+    )
+
+    THUMB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    img.save(THUMB_PATH, "PNG", optimize=True)
+    size_kb = THUMB_PATH.stat().st_size / 1024
+    print(
+        f"wrote {THUMB_PATH.relative_to(REPO_ROOT)} "
+        f"({THUMB_SIZE}x{THUMB_SIZE}, {size_kb:.0f} KB)"
+    )
 
 
 if __name__ == "__main__":

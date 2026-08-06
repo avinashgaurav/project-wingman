@@ -294,7 +294,7 @@ project-wingman-sales-copilot/
 ### Prerequisites
 
 - Node.js 20+ and npm 10+
-- Python 3.11+
+- **Python 3.11+, and this is a hard requirement, not a preference.** The backend uses PEP 604 unions (`str | None`) in function signatures without `from __future__ import annotations`, so it raises `TypeError` at import on 3.9. Stock macOS still ships 3.9, so check `python3 --version` first and install a newer one if needed (`brew install python@3.11`). Dependency resolution succeeds on 3.9, which makes this fail later and more confusingly than you would expect.
 - A Supabase project (free tier is fine)
 - API keys for at least one LLM provider (Gemini Flash has a generous free tier)
 - Optional: Pinecone, Deepgram, Google OAuth Client ID, Zoho OAuth app

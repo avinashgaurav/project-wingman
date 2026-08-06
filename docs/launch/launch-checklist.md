@@ -25,6 +25,23 @@ These were fixed in the pre-launch pass.
 
 ---
 
+## Fresh-clone verification results
+
+A clean clone of this branch was walked through the Quick Start up to the authentication boundary. What passed, and what it surfaced:
+
+**Passed:**
+- Clone contains everything it should, and no `.env` files leak into the repo.
+- `npm install` completes clean.
+- A dev build with **no `.env` at all** still produces a loadable `dist/`, which is the right behaviour: you need a loadable extension to obtain the extension ID that Google requires before it will issue you an OAuth client. The chicken-and-egg is navigable.
+- `lint-manifest.sh` correctly diagnoses that build, naming both the unresolved client ID and the localhost grant, and explaining what to do about each.
+- Backend dependency resolution succeeds.
+
+**Surfaced, and worth fixing:**
+- **Python 3.11 is genuinely required, and the failure mode is nasty.** Dependency resolution succeeds on macOS's stock Python 3.9, so you get all the way through `pip install` before the backend raises `TypeError` at import (PEP 604 unions in `api/routes/assets.py` and `api/routes/zoho.py` with no `from __future__ import annotations`). The README now says this explicitly with the `brew` hint. Alternative fix if you want 3.9 support: add the future import to those two files.
+- **`npm audit` reports 8 vulnerabilities, 6 of them high**, all with fixes available: `vite`, `postcss`, `ws`, `js-yaml`, `form-data`, `brace-expansion`. None are exploitable in a browser extension the way they would be in a server, but a launch audience runs `npm audit` and screenshots the output. Worth clearing before launch day.
+
+**Not verifiable without your credentials:** Google sign-in, live audio capture and STT, real LLM calls, Zoho CRM push, and the backend booting (it requires real `SUPABASE_URL` and `SUPABASE_SERVICE_KEY`, which have no defaults in `config.py`).
+
 ## BLOCKERS still open, and only you can close them
 
 - [ ] **BLOCKER: record the demo video.** See [`demo-video-script.md`](demo-video-script.md). 45 to 60 seconds, shot list included. This needs a configured extension in a real Meet call with a second participant, which is why it cannot be produced for you. It matters more than everything else on this list combined.
