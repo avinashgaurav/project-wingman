@@ -4,6 +4,49 @@ The project currently ships **zero** real product screenshots. The only PNGs in 
 
 Like the demo video, only you can capture these, since they need a configured extension against a real backend.
 
+## Getting to a screenshot-ready state
+
+Verified end to end on a clean clone with Python 3.11. **You do not need a real Supabase project just to capture screenshots**, and you do not need a Google OAuth client ID at all.
+
+`supabase-py` only checks that the service key *looks* like a JWT (it must start with `ey`), so a placeholder gets you a booting backend. Real Supabase calls will fail at runtime, but the token-budget check is fail-open and mock mode short-circuits the LLM calls, so the UI renders.
+
+`backend/.env`:
+
+```bash
+SUPABASE_URL=https://placeholder.supabase.co
+SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder.not-a-real-key
+JWT_SECRET=local-dev-only-not-used
+DEV_MODE=true
+BACKEND_URL=http://localhost:8000
+ALLOWED_ORIGINS=["chrome-extension://","http://localhost:3000"]
+GEMINI_API_KEY=          # put a real key here if you want real generated copy
+```
+
+`extension/.env`:
+
+```bash
+VITE_DEV_MODE=true
+VITE_MOCK_MODE=true      # set false with a real key for authentic output
+VITE_BACKEND_URL=http://localhost:8000
+VITE_SUPABASE_URL=https://placeholder.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder.not-a-real-key
+```
+
+Then:
+
+```bash
+cd backend && python3.11 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+curl http://localhost:8000/health          # {"status":"ok","service":"clientlens-backend"}
+
+cd ../extension && npm install && npm run dev
+```
+
+Load `extension/dist/` at `chrome://extensions` with Developer mode on. The panel opens straight into an admin session; there is no login step.
+
+**For screenshots that will be seen by thousands of people, use a real LLM key and turn mock mode off.** Mock responses are canned and a sharp-eyed viewer can tell. One Gemini Flash key on the free tier is enough for a screenshot session. Placeholder Supabase is fine either way; nothing in these six shots depends on real persistence.
+
 ## Capture settings
 
 - **Retina or 2x display.** A 1x screenshot of a Chrome side panel looks bad scaled up on PH.

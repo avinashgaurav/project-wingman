@@ -116,9 +116,9 @@ JWT_SECRET=local-dev-only-not-used
 # Supabase session (signInWithGoogle exists but is never called), so with
 # dev_mode off, AuthMiddleware rejects every request and no LLM call succeeds.
 #
-# The consequence: this backend accepts every request as a stub admin user.
-# Bind it to localhost or keep it behind your own network boundary. Do NOT
-# deploy it to a public URL in this configuration.
+# The consequence: this backend accepts every request as a stub sales_rep user
+# (admin endpoints stay gated). Bind it to localhost or keep it behind your own
+# network boundary. Do NOT deploy it to a public URL in this configuration.
 DEV_MODE=true
 EOF
 

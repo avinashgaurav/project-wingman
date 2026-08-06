@@ -49,6 +49,13 @@ A clean clone of this branch was walked through the Quick Start up to the authen
 
 All of that is now stated plainly: the security section leads with it, the RBAC table carries a warning that the matrix is dormant, `DEV_MODE=true` is documented as required with an explicit "keep this backend off the public internet" warning, `setup_env.sh` writes it, and the runtime error now names the real fix. Wiring real auth is the top roadmap item. Two consequential adjustments fell out of this: the production build no longer hard-fails on a missing OAuth client ID (Google export and Calendar are the only features that need it, so it warns instead), and `lint-manifest.sh` treats it as a note rather than an error. The backend host placeholder is still fatal, because MV3 blocks every backend request without it.
 
+**Second verification pass, on Python 3.11 with a booting backend:**
+
+- **The documented health check was wrong.** The README said `curl http://localhost:8000/healthz`, which returns `{"detail":"Not Found"}`. The route in `main.py` is `/health`. Fixed.
+- **A real Supabase project is not needed to boot.** `supabase-py` only validates that the service key starts with `ey`, so a JWT-shaped placeholder gets you `supabase.ready` and `Application startup complete`. This removes the Supabase prerequisite from a screenshot session, and the recipe is now in [`screenshot-checklist.md`](screenshot-checklist.md).
+- **The dev-mode stub user is `sales_rep`, not `admin`** (`api/middleware/auth.py`), which is better than an earlier version of this checklist claimed. `/admin/*` endpoints stay gated by the RBAC matrix even through the bypass, so KB wipe and role edits are not reachable. Corrected in the README.
+- **npm audit is down from 8 vulnerabilities (6 high) to 2 (1 high, 1 moderate).** The non-breaking fix cleared `postcss`, `ws`, `js-yaml`, `form-data`, and `brace-expansion`. The remaining two are `vite` and its bundled `esbuild`, and clearing them needs `vite@8`, a major jump that `@vitejs/plugin-react@4.7.0` does not support (it declares `^4 || ^5 || ^6 || ^7`). Deliberately not forced. Both remaining advisories concern the vite **dev server**, which this project never starts: the `dev` script is `vite build --watch`, not `vite dev`. Real exposure is nil. Revisit when plugin-react supports vite 8.
+
 **Not verifiable without your credentials:** Google sign-in, live audio capture and STT, real LLM calls, Zoho CRM push, and the backend booting (it requires real `SUPABASE_URL` and `SUPABASE_SERVICE_KEY`, which have no defaults in `config.py`).
 
 ## BLOCKERS still open, and only you can close them

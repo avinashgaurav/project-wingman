@@ -337,7 +337,7 @@ source venv/bin/activate
 uvicorn main:app --reload --port 8000
 ```
 
-Backend will be at `http://localhost:8000`. Health check: `curl http://localhost:8000/healthz`.
+Backend will be at `http://localhost:8000`. Health check: `curl http://localhost:8000/health` (returns `{"status":"ok","service":"clientlens-backend"}`). Earlier versions of this README said `/healthz`, which 404s; the route defined in `main.py` is `/health`.
 
 ### 4. Build & load the extension
 
@@ -506,8 +506,9 @@ The product handles OAuth tokens, transcripts, and an org-wide KB — security p
 - **Authentication is not wired in v1.0, and this is the most important thing on this page.** Be clear-eyed about it before you deploy:
   - The sidebar **provisions a local user with the `admin` role** on first render (`sidebar/App.tsx`). There is no sign-in step.
   - `signInWithGoogle()` exists in `shared/auth/google-sso.ts` but **is called from nowhere**. Nothing in the extension creates a Supabase session.
-  - Consequently `backendJwt()` cannot obtain a JWT, so the backend must run with `DEV_MODE=true`, in which `AuthMiddleware` accepts every request as a stub admin user (it logs `auth.dev_mode_bypass` each time). With `DEV_MODE=false` the product cannot make a single backend call.
-  - **Therefore: bind the backend to localhost or keep it behind your own network boundary. Do not deploy it to a public URL in this configuration.** Anyone who finds it can spend your LLM budget and read or write your knowledge base. `DAILY_USER_TOKEN_BUDGET` bounds the damage; it does not prevent it.
+  - Consequently `backendJwt()` cannot obtain a JWT, so the backend must run with `DEV_MODE=true`, in which `AuthMiddleware` accepts every request as a stub user and logs `auth.dev_mode_bypass` each time. With `DEV_MODE=false` the product cannot make a single backend call.
+  - The stub user's role is **`sales_rep`, deliberately not `admin`** (`api/middleware/auth.py`). So the `/admin/*` endpoints stay gated by the RBAC matrix even in dev mode: KB wipe and role edits are not reachable through the bypass. That is a real limit, not a cosmetic one.
+  - **Therefore: bind the backend to localhost or keep it behind your own network boundary. Do not deploy it to a public URL in this configuration.** Anyone who reaches it can spend your LLM budget and read your knowledge base with rep-level access. `DAILY_USER_TOKEN_BUDGET` bounds the damage; it does not prevent it.
   - `VITE_ALLOWED_DOMAIN` does **not** gate anything. It is read by `bg-orchestrator.ts` and `shared/auth/team-config.ts` only, to infer the rep's own company domain. An earlier version of this README claimed it restricted sign-in. It never did.
   - This is a fine posture for the single-user, self-hosted, local-backend case that v1.0 targets. It is **not** safe for a shared team deployment. Wiring real auth is the top item on the [roadmap](#roadmap).
 - **Admin passcode** — Settings panel is gated by an SHA-256-hashed passcode. Sensitive ops (KB wipe, role edit, integration disconnect) require it.
