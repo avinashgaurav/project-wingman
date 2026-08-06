@@ -40,6 +40,15 @@ A clean clone of this branch was walked through the Quick Start up to the authen
 - **Python 3.11 is genuinely required, and the failure mode is nasty.** Dependency resolution succeeds on macOS's stock Python 3.9, so you get all the way through `pip install` before the backend raises `TypeError` at import (PEP 604 unions in `api/routes/assets.py` and `api/routes/zoho.py` with no `from __future__ import annotations`). The README now says this explicitly with the `brew` hint. Alternative fix if you want 3.9 support: add the future import to those two files.
 - **`npm audit` reports 8 vulnerabilities, 6 of them high**, all with fixes available: `vite`, `postcss`, `ws`, `js-yaml`, `form-data`, `brace-expansion`. None are exploitable in a browser extension the way they would be in a server, but a launch audience runs `npm audit` and screenshots the output. Worth clearing before launch day.
 
+**The big one, found while checking whether sign-in gated the screenshots:** authentication is not wired at all, and the docs claimed it was.
+
+- `sidebar/App.tsx` provisions a local user with `role: "admin"` on first render. There is no sign-in step.
+- `signInWithGoogle()` in `shared/auth/google-sso.ts` is exported and called from nowhere. Nothing creates a Supabase session.
+- So `backendJwt()` can never obtain a JWT, and with the default `DEV_MODE=false` **every backend call fails**. The shipped default configuration cannot make a single LLM request, and the error message told users to "Sign in with Google", which is impossible.
+- The README claimed `VITE_ALLOWED_DOMAIN` restricted who could sign in. It never did; it only infers the rep's company domain for team config.
+
+All of that is now stated plainly: the security section leads with it, the RBAC table carries a warning that the matrix is dormant, `DEV_MODE=true` is documented as required with an explicit "keep this backend off the public internet" warning, `setup_env.sh` writes it, and the runtime error now names the real fix. Wiring real auth is the top roadmap item. Two consequential adjustments fell out of this: the production build no longer hard-fails on a missing OAuth client ID (Google export and Calendar are the only features that need it, so it warns instead), and `lint-manifest.sh` treats it as a note rather than an error. The backend host placeholder is still fatal, because MV3 blocks every backend request without it.
+
 **Not verifiable without your credentials:** Google sign-in, live audio capture and STT, real LLM calls, Zoho CRM push, and the backend booting (it requires real `SUPABASE_URL` and `SUPABASE_SERVICE_KEY`, which have no defaults in `config.py`).
 
 ## BLOCKERS still open, and only you can close them

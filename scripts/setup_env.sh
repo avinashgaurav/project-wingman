@@ -52,14 +52,18 @@ SUPABASE_PUBLISHABLE="$REPLY"
 ask "Backend URL" "http://localhost:8000"
 BACKEND_URL="$REPLY"
 
-ask "Chrome OAuth Client ID" "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+# OPTIONAL. Only Google Slides/Docs/Drive export and Calendar sync use
+# chrome.identity.getAuthToken, which reads this from the built manifest. It is
+# NOT needed to sign in (v1.0 provisions a local admin user) and not needed for
+# Zoho. Press Enter to skip; the rest of the product works without it.
+echo "  (optional, press Enter to skip: only needed for Google Slides/Drive export"
+echo "   and Calendar sync)"
+ask "Chrome OAuth Client ID" ""
 GOOGLE_CLIENT_ID="$REPLY"
 
-# Written to extension/.env as VITE_GOOGLE_CLIENT_ID and injected into the built
-# manifest's oauth2.client_id by vite.config.ts. Without it, Google sign-in fails
-# because chrome.identity.getAuthToken reads that manifest field.
-
-ask "Google Workspace domain allowed to sign in (blank = any)" ""
+# Used to infer the rep's own company domain for team config. It does NOT gate
+# sign-in, despite what earlier docs claimed.
+ask "Your company domain (used for team config, blank = example.com)" ""
 ALLOWED_DOMAIN="$REPLY"
 
 echo
@@ -106,6 +110,16 @@ GOOGLE_CLIENT_SECRET=
 BACKEND_URL=${BACKEND_URL}
 ALLOWED_ORIGINS=["chrome-extension://","http://localhost:3000"]
 JWT_SECRET=local-dev-only-not-used
+
+# ── Auth ──────────────────────────────────────────────────────────────────────
+# REQUIRED for v1.0 to function at all. Nothing in the extension creates a
+# Supabase session (signInWithGoogle exists but is never called), so with
+# dev_mode off, AuthMiddleware rejects every request and no LLM call succeeds.
+#
+# The consequence: this backend accepts every request as a stub admin user.
+# Bind it to localhost or keep it behind your own network boundary. Do NOT
+# deploy it to a public URL in this configuration.
+DEV_MODE=true
 EOF
 
 chmod 600 "$BACKEND_ENV"
@@ -130,10 +144,17 @@ VITE_OPENROUTER_MODEL=openai/gpt-oss-20b:free
 # replacing the your-backend.railway.app placeholder in the built manifest.
 VITE_BACKEND_URL=${BACKEND_URL}
 
-# ── Google sign-in ────────────────────────────────────────────────────────────
-# Injected into the built manifest as oauth2.client_id. chrome.identity
-# .getAuthToken reads it from there, so sign-in breaks if this is unset.
+# ── Auth ──────────────────────────────────────────────────────────────────────
+# Must match DEV_MODE in backend/.env. Sends a stub bearer token instead of a
+# Supabase JWT. Required in v1.0: no code path creates a Supabase session.
+VITE_DEV_MODE=true
+
+# ── Google (optional) ─────────────────────────────────────────────────────────
+# Injected into the built manifest as oauth2.client_id. Only Slides/Docs/Drive
+# export and Calendar sync need it. Blank is fine.
 VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+
+# Company domain for team config. Does not gate sign-in.
 VITE_ALLOWED_DOMAIN=${ALLOWED_DOMAIN}
 
 # ── Supabase ──────────────────────────────────────────────────────────────────

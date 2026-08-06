@@ -71,29 +71,35 @@ function copyStaticAssets(mode: string, env: Record<string, string>) {
       manifest.host_permissions = Array.from(hosts);
       writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
 
-      // Production builds must not ship either placeholder. Failing here is
-      // deliberate: it is the same gate as scripts/lint-manifest.sh, moved
-      // early enough that a broken bundle is never produced at all.
+      // Two placeholders, two different severities.
+      //
+      // The backend host is fatal: without a matching host_permissions entry,
+      // MV3 blocks every fetch to the backend and nothing in the product works.
+      //
+      // The OAuth client ID is NOT fatal. It is only read by
+      // chrome.identity.getAuthToken, which only Google Slides/Docs/Drive export
+      // (background/google-writer.ts) and Calendar sync
+      // (meeting-copilot/integrations/google-calendar.ts) call. Sign-in does not
+      // depend on it: the sidebar provisions a local admin user, and Zoho uses
+      // launchWebAuthFlow, which builds its own auth URL. So a deployment that
+      // does not want Google export is legitimately fine without one.
       if (mode === "production") {
-        const unresolved: string[] = [];
-        if (manifest.oauth2?.client_id?.includes(CLIENT_ID_PLACEHOLDER)) {
-          unresolved.push(
-            "oauth2.client_id is still " +
-              CLIENT_ID_PLACEHOLDER +
-              ". Set VITE_GOOGLE_CLIENT_ID in extension/.env (run: bash scripts/setup_env.sh).",
-          );
-        }
         if (manifest.host_permissions.includes(BACKEND_HOST_PLACEHOLDER)) {
-          unresolved.push(
+          throw new Error(
             "host_permissions still contains " +
               BACKEND_HOST_PLACEHOLDER +
-              ". Set VITE_BACKEND_URL in extension/.env to your https backend URL.",
+              ".\nSet VITE_BACKEND_URL in extension/.env to your https backend URL." +
+              "\nWithout it, MV3 blocks every request the extension makes to your backend.",
           );
         }
-        if (unresolved.length) {
-          throw new Error(
-            "manifest placeholders unresolved in a production build:\n  - " +
-              unresolved.join("\n  - "),
+        if (manifest.oauth2?.client_id?.includes(CLIENT_ID_PLACEHOLDER)) {
+          console.warn(
+            "\n[manifest] oauth2.client_id is unset (still " +
+              CLIENT_ID_PLACEHOLDER +
+              ").\n" +
+              "          Google Slides/Docs/Drive export and Calendar sync will not work.\n" +
+              "          Everything else, including pitch generation, live mode and Zoho, is unaffected.\n" +
+              "          Set VITE_GOOGLE_CLIENT_ID in extension/.env if you want those features.\n",
           );
         }
       }

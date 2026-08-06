@@ -30,7 +30,8 @@ Generate personalized pitches, copilot live Google Meet calls in real time, hand
 > | **LLMs** | Bring-your-own-keys — Anthropic · Gemini · Groq · OpenRouter · any OpenAI-compatible endpoint |
 > | **Privacy** | Local-first. The extension never holds an LLM key; keys live in the backend. Call data goes only to *your* configured provider, never to a Wingman server. |
 > | **License** | [MIT](LICENSE) |
-> | **Status** | v1.0, open beta. Self-hosted: load unpacked today. A Chrome Web Store listing is **not** live yet. |
+> | **Status** | v1.0, open beta. Self-hosted, load unpacked. No Chrome Web Store listing yet. |
+> | **Auth** | **Not wired.** Single-user by design today: the sidebar provisions a local admin and the backend runs in `DEV_MODE`. Keep the backend off the public internet. See [Security model](#security-model). |
 
 Behind the sidebar sits a FastAPI backend with a multi-agent RAG pipeline, a Pinecone-backed knowledge base, Deepgram speech-to-text, and pluggable LLM providers. The product is deliberately **bring-your-own-keys**: the extension talks to the backend over HTTPS, and the backend proxies to the provider of your choice.
 
@@ -156,6 +157,9 @@ The `ModelPicker` in the sidebar lets each user pick their preferred provider/mo
 ### 8. Roles & RBAC
 
 Backed by Supabase RLS and a `rbac/roles.py` permission matrix on the backend.
+
+> [!WARNING]
+> **In v1.0 this matrix is effectively dormant.** The permission checks are real and they run, but because auth is not wired (see [Security model](#security-model)), the extension self-assigns the `admin` role and the backend runs in `DEV_MODE`, treating every caller as a stub admin. The table below describes the intended model and what the code enforces once a real JWT is present, not what constrains a user today.
 
 | Role | Capabilities |
 |---|---|
@@ -348,7 +352,7 @@ Then in Chrome:
 3. Click **Load unpacked**
 4. Select `extension/dist/`
 
-The Project Wingman sidebar will appear when you click the extension icon. Sign in with a Google account on your configured workspace domain.
+The Project Wingman sidebar appears when you click the extension icon. **There is no sign-in step**: v1.0 provisions a local `admin` user and opens straight into the panel. See [Security model](#security-model) for what that means and why the backend must stay off the public internet.
 
 ### 5. Verify
 
@@ -373,8 +377,9 @@ Order matters: the lint reads `extension/dist/manifest.json` when it exists, bec
 | `VITE_BACKEND_URL` | FastAPI backend base URL | Yes |
 | `VITE_SUPABASE_URL` | Supabase project URL | Yes |
 | `VITE_SUPABASE_ANON_KEY` | Supabase publishable (anon) key | Yes |
-| `VITE_ALLOWED_DOMAIN` | Google Workspace domain that may sign in (blank allows any) | Yes |
-| `VITE_GOOGLE_CLIENT_ID` | Chrome OAuth client ID. **Injected into the built manifest's `oauth2.client_id` at build time.** Google sign-in fails without it | Yes |
+| `VITE_DEV_MODE` | Must be `true` in v1.0, and must match `DEV_MODE` in `backend/.env`. Sends a stub bearer instead of a Supabase JWT. Without it every backend call fails | Yes |
+| `VITE_ALLOWED_DOMAIN` | Your company domain, used to infer the rep's own domain for team config. Does **not** gate sign-in | No |
+| `VITE_GOOGLE_CLIENT_ID` | Chrome OAuth client ID, injected into the built manifest's `oauth2.client_id` at build time. Needed **only** for Google Slides/Docs/Drive export and Calendar sync | No |
 | `VITE_LLM_PROVIDER` | Default provider (`gemini` / `groq` / `anthropic` / `openrouter` / `custom`) | Yes |
 | `VITE_MOCK_MODE` | `true` to short-circuit LLM calls for UI dev | No |
 | `VITE_GEMINI_MODEL` | Override default Gemini model | No |
@@ -398,6 +403,7 @@ Order matters: the lint reads `extension/dist/manifest.json` when it exists, bec
 | `DEEPGRAM_API_KEY` | Deepgram STT key | If using live mode |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth | If using Calendar |
 | `ZOHO_CLIENT_ID` / `ZOHO_CLIENT_SECRET` | Zoho OAuth | If using CRM push |
+| `DEV_MODE` | Must be `true` in v1.0. `AuthMiddleware` then accepts every request as a stub admin. Required because no code path creates a Supabase session. Keep such a backend off the public internet | Yes |
 | `BACKEND_URL` | Self URL (used in OAuth callbacks) | Yes |
 | `ALLOWED_ORIGINS` | CORS allowlist (extension + dev origins) | Yes |
 | `DAILY_USER_TOKEN_BUDGET` | Per-user daily LLM token cap (default `1000000`) | Optional |
@@ -497,7 +503,13 @@ The product handles OAuth tokens, transcripts, and an org-wide KB — security p
 - **FETCH_URL_TEXT hardened** — the background service worker's URL-fetch message handler rejects content-script senders and external extensions, blocking SSRF chains where a visited page could drive the extension to fetch arbitrary URLs (including private localhost) and read back the response.
 - **CRM RBAC** — Zoho `/exchange` and `/refresh` endpoints require the `crm:connect` permission (`ADMIN`, `SALES_REP` only). A viewer-role JWT cannot mint a Zoho access token using the server's `client_secret`.
 - **Data centre allowlist** — Zoho upstream URL is constructed from a vetted set (`{com, eu, in, com.cn, com.au, jp}`), preventing a caller from steering token exchange to `accounts.zoho.<attacker>`.
-- **Workspace gating** — only emails ending in `@${VITE_ALLOWED_DOMAIN}` can sign in. Configurable per deployment.
+- **Authentication is not wired in v1.0, and this is the most important thing on this page.** Be clear-eyed about it before you deploy:
+  - The sidebar **provisions a local user with the `admin` role** on first render (`sidebar/App.tsx`). There is no sign-in step.
+  - `signInWithGoogle()` exists in `shared/auth/google-sso.ts` but **is called from nowhere**. Nothing in the extension creates a Supabase session.
+  - Consequently `backendJwt()` cannot obtain a JWT, so the backend must run with `DEV_MODE=true`, in which `AuthMiddleware` accepts every request as a stub admin user (it logs `auth.dev_mode_bypass` each time). With `DEV_MODE=false` the product cannot make a single backend call.
+  - **Therefore: bind the backend to localhost or keep it behind your own network boundary. Do not deploy it to a public URL in this configuration.** Anyone who finds it can spend your LLM budget and read or write your knowledge base. `DAILY_USER_TOKEN_BUDGET` bounds the damage; it does not prevent it.
+  - `VITE_ALLOWED_DOMAIN` does **not** gate anything. It is read by `bg-orchestrator.ts` and `shared/auth/team-config.ts` only, to infer the rep's own company domain. An earlier version of this README claimed it restricted sign-in. It never did.
+  - This is a fine posture for the single-user, self-hosted, local-backend case that v1.0 targets. It is **not** safe for a shared team deployment. Wiring real auth is the top item on the [roadmap](#roadmap).
 - **Admin passcode** — Settings panel is gated by an SHA-256-hashed passcode. Sensitive ops (KB wipe, role edit, integration disconnect) require it.
 - **Audio handling** — tab audio is streamed to Deepgram via WebSocket and never persisted server-side beyond the live transcript buffer.
 - **Repository protection** — `main` is protected: no force-pushes, no deletion, linear history required (squash/rebase merges only). Admin enforcement is off so the maintainer can emergency-fix; required-PR-reviews is off because this is a solo-maintained repo.
@@ -528,6 +540,7 @@ The product handles OAuth tokens, transcripts, and an org-wide KB — security p
 
 - ~~Email council UI surface~~ — **shipped**: the Email mode (Generate tab) drives the council pipeline and renders a copy-ready draft
 - ~~One-shot "what do I say" objection composer~~ — **shipped**: inline `[N]` citation chips, `▾ Why this answer` disclosure, feature-flag gated, telemetry wired (#117 / #118 / #119)
+- **Wire real authentication (top priority).** Call `signInWithGoogle()` on first run instead of provisioning a local admin, exchange the Google identity for a Supabase session so `backendJwt()` stops needing the `DEV_MODE` bypass, and make the `rbac/roles.py` matrix actually constrain callers. Until this lands, a shared team deployment is not safe and the backend must stay off the public internet.
 - Streamed objection response (`respondAgent` over `callStream`; needs an agent-contract refactor for the JSON trailer — non-trivial)
 - Move Objection out of the Generate-tab mode switcher (it's a mid-call workflow, not a Generate sub-mode) + keyboard shortcut for selected-text capture
 - Auto-end Live Meeting Copilot session when the Meet tab closes (saves the "rep forgot to click End" footgun)

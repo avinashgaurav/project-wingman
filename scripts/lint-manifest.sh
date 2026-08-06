@@ -44,18 +44,24 @@ if [ ! -f "$BUILT" ]; then
   exit "$FAIL"
 fi
 
+# WARNING, not an error. oauth2.client_id is only read by
+# chrome.identity.getAuthToken, which only Google Slides/Docs/Drive export and
+# Calendar sync use. Sign-in does not depend on it (the sidebar provisions a
+# local admin user) and Zoho uses launchWebAuthFlow. A deployment with no
+# Google export is legitimately fine without one.
 if grep -q "YOUR_GOOGLE_CLIENT_ID" "$BUILT"; then
-  echo "lint-manifest: $BUILT contains YOUR_GOOGLE_CLIENT_ID." >&2
-  echo "                Set VITE_GOOGLE_CLIENT_ID in extension/.env, then rebuild." >&2
-  echo "                Google sign-in cannot work without it: chrome.identity" >&2
-  echo "                .getAuthToken reads oauth2.client_id from the manifest." >&2
-  FAIL=1
+  echo "lint-manifest: NOTE, $BUILT has no oauth2.client_id set."
+  echo "                Google Slides/Docs/Drive export and Calendar sync will not work."
+  echo "                Everything else is unaffected. Set VITE_GOOGLE_CLIENT_ID to enable them."
 fi
 
+# ERROR. Without a host_permissions entry matching the backend, MV3 blocks every
+# request the extension makes to it, so nothing in the product works.
 if grep -q "your-backend.railway.app" "$BUILT"; then
   echo "lint-manifest: $BUILT contains your-backend.railway.app." >&2
   echo "                Set VITE_BACKEND_URL in extension/.env to your https" >&2
-  echo "                backend URL, then rebuild." >&2
+  echo "                backend URL, then rebuild. MV3 blocks all backend" >&2
+  echo "                requests without a matching host permission." >&2
   FAIL=1
 fi
 

@@ -53,7 +53,7 @@ Post this the moment the launch goes live. It sets the tone of the entire thread
 >
 > The part I care most about: **there is no Wingman server.** It is MIT licensed and self-hosted. You run the backend, you plug in your own Anthropic, Gemini, Groq, or any OpenAI-compatible key, and your call transcripts go to your provider instead of mine. No telemetry back to me. That is a deliberate constraint, not a stage I am waiting to grow out of.
 >
-> Being straight about where it stands: this is v1.0 open beta, built solo. Setup is a developer task today (self-hosted backend, your own keys) and there is no Chrome Web Store listing yet. Zoho is the only CRM wired up; HubSpot and Salesforce are next. Google Meet is the only meeting surface that works end to end.
+> Being straight about where it stands: this is v1.0 open beta, built solo. Setup is a developer task today (self-hosted backend, your own keys) and there is no Chrome Web Store listing yet. Zoho is the only CRM wired up; HubSpot and Salesforce are next. Google Meet is the only meeting surface that works end to end. And the honest one: **authentication is not wired yet.** v1.0 assumes one rep running their own backend on their own machine, so the sidebar opens straight into an admin session and the backend runs in dev mode. That is documented in the security section rather than buried, it is the top item on the roadmap, and it is why I say self-hosted-single-user rather than team-ready.
 >
 > What I would genuinely like from you: if you run sales calls, tell me where the coaching cue fires at the wrong moment. That is the hardest part to get right and the part I cannot solve alone. Issues and PRs are open, and the backlog is public.
 
@@ -69,7 +69,7 @@ Roughly 300 words. Long for a first comment, but the honesty section is what ear
 >
 > There is no Wingman server. MIT licensed, self-hosted, your own LLM keys, no telemetry back to me.
 >
-> Honestly: v1.0 open beta, built solo, setup is still a developer task, no Web Store listing yet, Zoho-only CRM.
+> Honestly: v1.0 open beta, built solo, setup is still a developer task, no Web Store listing yet, Zoho-only CRM, and auth is not wired so it assumes one rep on their own backend. All of that is in the README rather than buried.
 >
 > If you run sales calls: tell me where the coaching fires at the wrong moment. That is the part I cannot solve alone.
 
@@ -93,6 +93,9 @@ Have these ready. Speed of reply matters more than polish on launch day.
 
 **"How do you stop it hallucinating numbers?"**
 > Two layers. The generation agents are instructed to cite a `source_id` for every numeric claim, and then a separate validation agent re-checks each number against the retrieved sources and rejects anything unsourced. The objection composer emits inline citation markers, and hovering one shows you the exact source quote. It is not magic and a wrong source still produces a wrong answer, but "confidently uncited" is the specific failure it is built to prevent.
+
+**"Wait, there's no login? Isn't that insecure?"** (Expect this from anyone who reads the source. Answer it before they have to ask.)
+> Correct, and it is deliberate for v1.0 rather than an oversight I am hoping nobody notices. The assumption is one rep running the backend on their own machine, bound to localhost, so the sidebar opens straight into an admin session and the backend runs in dev mode. The RBAC matrix and JWT middleware are written and they run, they just have no real identity to check yet. The consequence is spelled out at the top of the security section: do not put that backend on a public URL, because anyone who finds it can spend your LLM budget and read your knowledge base. Wiring real sign-in is the number one roadmap item, and it is what gates a shared team deployment. I would rather ship this stated plainly than imply a security property I have not built.
 
 **"Is the code actually good or is this a weekend project?"**
 > Judge it yourself, that is the point of MIT. Honest assessment: the extension is the mature half, the backend is smaller than it looks, and test coverage is thin because most of the surface is Chrome APIs that a harness does not reach. There is a public UX and workflow audit backlog if you want to see the known gaps rather than discover them.
