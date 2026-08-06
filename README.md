@@ -327,7 +327,12 @@ This interactive script prompts for each value, hides secrets (no echo), and wri
 > [!NOTE]
 > **You do not hand-edit `extension/manifest.json`.** The committed manifest is a template holding two deliberate placeholders: `oauth2.client_id` and a `your-backend.railway.app` host entry. `vite.config.ts` fills both in at build time from `VITE_GOOGLE_CLIENT_ID` and `VITE_BACKEND_URL`, writing the result to `extension/dist/manifest.json`.
 >
-> A **production** build (`npm run build`) fails loudly if either placeholder is still unresolved, so a bundle with a broken Google sign-in cannot be produced by accident. Only `https` backend URLs contribute a host entry; a `localhost` backend is covered by the dev-only localhost permissions instead.
+> A **production** build (`npm run build`) fails loudly if the backend host is still unresolved, because MV3 blocks every request to a host that is not in `host_permissions`. A missing `VITE_GOOGLE_CLIENT_ID` only warns, since it is optional (see the config table).
+>
+> Three rules govern how `VITE_BACKEND_URL` becomes a host permission:
+> - **Only `https` URLs qualify.** A `localhost` backend is covered by the dev-only localhost permissions instead.
+> - **The port is stripped.** Chrome match patterns cannot contain one, so `https://api.example.com:8443` becomes `https://api.example.com/*`. A pattern with a port makes Chrome refuse to load the extension entirely.
+> - **Loopback hosts are rejected in production even over `https`.** `https://localhost:8000` will not produce a host entry in a release build, which means the build fails rather than shipping page-level access to the developer's machine (the vulnerability class of issue #37).
 
 ### 3. Run the backend
 

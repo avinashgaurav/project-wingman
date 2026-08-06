@@ -21,14 +21,31 @@ const DEV_LOCALHOST_HOSTS = [
 const CLIENT_ID_PLACEHOLDER = "YOUR_GOOGLE_CLIENT_ID";
 const BACKEND_HOST_PLACEHOLDER = "https://your-backend.railway.app/*";
 
-/** `https://api.example.com/v1` -> `https://api.example.com/*`, or null if unusable. */
-function hostPermissionFor(backendUrl: string): string | null {
+// Hosts that must never appear in a production bundle's host_permissions, even
+// over https. Granting a shipped extension page-level access to the user's own
+// machine is the vulnerability issue #37 closed; re-introducing it through the
+// backend URL would be the same bug by a different route.
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "[::1]", "::1"]);
+
+/**
+ * `https://api.example.com/v1` -> `https://api.example.com/*`, or null if the
+ * URL cannot legitimately become a host permission.
+ *
+ * Two non-obvious rules:
+ *  - Chrome match patterns MUST NOT contain a port. `new URL().host` includes
+ *    one, so we use `hostname`. Emitting `https://host:8443/*` produces a
+ *    manifest Chrome refuses to load, which would brick the extension for
+ *    anyone whose backend runs on a non-default port.
+ *  - https on a loopback host still counts as localhost. Only dev builds may
+ *    reach the developer's machine, via DEV_LOCALHOST_HOSTS.
+ */
+function hostPermissionFor(backendUrl: string, mode: string): string | null {
   try {
-    const { protocol, host } = new URL(backendUrl);
-    // localhost is handled by DEV_LOCALHOST_HOSTS on dev builds only; a
-    // production bundle must never grant page access to the user's machine.
-    if (protocol !== "https:") return null;
-    return `${protocol}//${host}/*`;
+    const url = new URL(backendUrl);
+    if (url.protocol !== "https:") return null;
+    const hostname = url.hostname;
+    if (mode === "production" && LOOPBACK_HOSTS.has(hostname)) return null;
+    return `https://${hostname}/*`;
   } catch {
     return null;
   }
@@ -53,7 +70,7 @@ function copyStaticAssets(mode: string, env: Record<string, string>) {
       }
 
       // Real backend host replaces the placeholder entry.
-      const backendHost = hostPermissionFor(env.VITE_BACKEND_URL?.trim() || "");
+      const backendHost = hostPermissionFor(env.VITE_BACKEND_URL?.trim() || "", mode);
       if (backendHost) {
         hosts.delete(BACKEND_HOST_PLACEHOLDER);
         hosts.add(backendHost);
