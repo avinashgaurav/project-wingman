@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { resolve } from "path";
 import { cpSync, existsSync, copyFileSync, readFileSync, writeFileSync } from "fs";
@@ -12,7 +12,29 @@ const DEV_LOCALHOST_HOSTS = [
   "http://localhost:11434/*",
 ];
 
-function copyStaticAssets(mode: string) {
+// The committed manifest is a TEMPLATE. These two placeholders are deployment-
+// specific, so they are filled in at build time from extension/.env rather than
+// committed. A fresh clone that skipped setup would otherwise ship
+// YOUR_GOOGLE_CLIENT_ID to chrome.identity.getAuthToken (Google sign-in fails
+// with a useless error) and leave the self-hoster's own backend absent from
+// host_permissions (every fetch to it blocked by MV3).
+const CLIENT_ID_PLACEHOLDER = "YOUR_GOOGLE_CLIENT_ID";
+const BACKEND_HOST_PLACEHOLDER = "https://your-backend.railway.app/*";
+
+/** `https://api.example.com/v1` -> `https://api.example.com/*`, or null if unusable. */
+function hostPermissionFor(backendUrl: string): string | null {
+  try {
+    const { protocol, host } = new URL(backendUrl);
+    // localhost is handled by DEV_LOCALHOST_HOSTS on dev builds only; a
+    // production bundle must never grant page access to the user's machine.
+    if (protocol !== "https:") return null;
+    return `${protocol}//${host}/*`;
+  } catch {
+    return null;
+  }
+}
+
+function copyStaticAssets(mode: string, env: Record<string, string>) {
   return {
     name: "copy-static-assets",
     closeBundle() {
@@ -21,14 +43,59 @@ function copyStaticAssets(mode: string) {
       const manifestPath = resolve(out, "manifest.json");
       cpSync(resolve(root, "manifest.json"), manifestPath);
 
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+      const hosts = new Set<string>(manifest.host_permissions || []);
+
+      // Real Google OAuth client ID, read from extension/.env.
+      const clientId = env.VITE_GOOGLE_CLIENT_ID?.trim();
+      if (clientId) {
+        manifest.oauth2 = { ...manifest.oauth2, client_id: clientId };
+      }
+
+      // Real backend host replaces the placeholder entry.
+      const backendHost = hostPermissionFor(env.VITE_BACKEND_URL?.trim() || "");
+      if (backendHost) {
+        hosts.delete(BACKEND_HOST_PLACEHOLDER);
+        hosts.add(backendHost);
+      }
+
       if (mode === "development") {
         // Dev build: inject localhost host_permissions so unpacked extension
         // can talk to localhost:8000 (backend) and localhost:11434 (Ollama).
-        const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
-        const existing = new Set(manifest.host_permissions || []);
-        for (const h of DEV_LOCALHOST_HOSTS) existing.add(h);
-        manifest.host_permissions = Array.from(existing);
-        writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
+        for (const h of DEV_LOCALHOST_HOSTS) hosts.add(h);
+        // A localhost backend needs no https host entry; drop the placeholder
+        // so the dev bundle does not advertise a host nobody owns.
+        if (!backendHost) hosts.delete(BACKEND_HOST_PLACEHOLDER);
+      }
+
+      manifest.host_permissions = Array.from(hosts);
+      writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
+
+      // Production builds must not ship either placeholder. Failing here is
+      // deliberate: it is the same gate as scripts/lint-manifest.sh, moved
+      // early enough that a broken bundle is never produced at all.
+      if (mode === "production") {
+        const unresolved: string[] = [];
+        if (manifest.oauth2?.client_id?.includes(CLIENT_ID_PLACEHOLDER)) {
+          unresolved.push(
+            "oauth2.client_id is still " +
+              CLIENT_ID_PLACEHOLDER +
+              ". Set VITE_GOOGLE_CLIENT_ID in extension/.env (run: bash scripts/setup_env.sh).",
+          );
+        }
+        if (manifest.host_permissions.includes(BACKEND_HOST_PLACEHOLDER)) {
+          unresolved.push(
+            "host_permissions still contains " +
+              BACKEND_HOST_PLACEHOLDER +
+              ". Set VITE_BACKEND_URL in extension/.env to your https backend URL.",
+          );
+        }
+        if (unresolved.length) {
+          throw new Error(
+            "manifest placeholders unresolved in a production build:\n  - " +
+              unresolved.join("\n  - "),
+          );
+        }
       }
 
       if (existsSync(resolve(root, "icons"))) {
@@ -73,7 +140,13 @@ function idempotentTransponder() {
 
 
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), copyStaticAssets(mode), idempotentTransponder()],
+  plugins: [
+    react(),
+    // Third arg "" loads every var, not just the VITE_ prefix, so the manifest
+    // transform can read values the client bundle never sees.
+    copyStaticAssets(mode, loadEnv(mode, __dirname, "")),
+    idempotentTransponder(),
+  ],
   build: {
     outDir: "dist",
     emptyOutDir: true,

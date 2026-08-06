@@ -55,6 +55,13 @@ BACKEND_URL="$REPLY"
 ask "Chrome OAuth Client ID" "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
 GOOGLE_CLIENT_ID="$REPLY"
 
+# Written to extension/.env as VITE_GOOGLE_CLIENT_ID and injected into the built
+# manifest's oauth2.client_id by vite.config.ts. Without it, Google sign-in fails
+# because chrome.identity.getAuthToken reads that manifest field.
+
+ask "Google Workspace domain allowed to sign in (blank = any)" ""
+ALLOWED_DOMAIN="$REPLY"
+
 echo
 echo "SECRET values (input hidden — paste at the prompt):"
 echo
@@ -90,8 +97,9 @@ OPENROUTER_TITLE=Project Wingman
 PINECONE_API_KEY=
 PINECONE_INDEX=clientlens
 
-# ── Google OAuth (only needed for Slides/Docs/Drive features; safe to leave blank) ──
-GOOGLE_CLIENT_ID=
+# ── Google OAuth (needed for Slides/Docs/Drive + Calendar; client secret only
+#    for the server-side flows, leave blank if you are not using them) ──
+GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
 GOOGLE_CLIENT_SECRET=
 
 # ── App ───────────────────────────────────────────────────────────────────────
@@ -118,7 +126,15 @@ VITE_LLM_PROVIDER=openrouter
 VITE_OPENROUTER_MODEL=openai/gpt-oss-20b:free
 
 # ── Backend ───────────────────────────────────────────────────────────────────
+# vite.config.ts also derives a host_permissions entry from this on https URLs,
+# replacing the your-backend.railway.app placeholder in the built manifest.
 VITE_BACKEND_URL=${BACKEND_URL}
+
+# ── Google sign-in ────────────────────────────────────────────────────────────
+# Injected into the built manifest as oauth2.client_id. chrome.identity
+# .getAuthToken reads it from there, so sign-in breaks if this is unset.
+VITE_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+VITE_ALLOWED_DOMAIN=${ALLOWED_DOMAIN}
 
 # ── Supabase ──────────────────────────────────────────────────────────────────
 VITE_SUPABASE_URL=${SUPABASE_URL}
@@ -142,6 +158,10 @@ echo "  backend/.env     ${BACKEND_ENV}"
 echo "  extension/.env   ${EXT_ENV}"
 echo
 echo "Next:"
-echo "  1. Start backend:  cd backend && pip install -r requirements.txt && uvicorn main:app --reload"
-echo "  2. Build extension: cd extension && bun install && bun run build"
+echo "  1. Start backend:   cd backend && pip install -r requirements.txt && uvicorn main:app --reload"
+echo "  2. Build extension: cd extension && npm install && npm run dev"
 echo "  3. Load in Chrome:  chrome://extensions → Developer mode ON → Load unpacked → extension/dist/"
+echo
+echo "You do NOT need to hand-edit extension/manifest.json. The build injects your"
+echo "OAuth client ID and backend host into extension/dist/manifest.json from the"
+echo ".env files above. Verify with: bash scripts/lint-manifest.sh"
