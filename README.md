@@ -30,7 +30,7 @@ Generate personalized pitches, copilot live Google Meet calls in real time, hand
 > | **LLMs** | Bring-your-own-keys — Anthropic · Gemini · Groq · OpenRouter · any OpenAI-compatible endpoint |
 > | **Privacy** | Local-first. The extension never holds an LLM key; keys live in the backend. Call data goes only to *your* configured provider, never to a Wingman server. |
 > | **License** | [MIT](LICENSE) |
-> | **Status** | Open beta |
+> | **Status** | v1.0, open beta. Self-hosted: load unpacked today. A Chrome Web Store listing is **not** live yet. |
 
 Behind the sidebar sits a FastAPI backend with a multi-agent RAG pipeline, a Pinecone-backed knowledge base, Deepgram speech-to-text, and pluggable LLM providers. The product is deliberately **bring-your-own-keys**: the extension talks to the backend over HTTPS, and the backend proxies to the provider of your choice.
 
@@ -95,7 +95,7 @@ A Google Meet companion that captures tab audio, transcribes it in real time, an
   - **Council Validator** — fact-checks any number the rep is about to say.
 - **In-Meet transponder** — a non-intrusive overlay on `meet.google.com` that shows the company name chip, sentiment, and the current coaching cue. Designed not to steal focus during a live call.
 - **Post-call summary** — once the call ends, a structured summary is generated: agenda coverage, sentiment timeline, key objections raised, action items, sourced quotes.
-- **CRM push** — one click to write the summary as a note in Zoho CRM under the prospect's record. Backed by RBAC-gated server-side OAuth (see [Security model](#security-model)).
+- **CRM push:** one click to write the summary as a note in Zoho CRM under the prospect's record. Backed by RBAC-gated server-side OAuth (see [Security model](#security-model)). **Zoho is the only CRM wired today**; HubSpot and Salesforce connectors are on the [roadmap](#roadmap) and not implemented. The Integrations panel shows Meet and Zoom cards for parity, but Google Meet is the only meeting surface that works end to end.
 - **Calendar sync** — Google Calendar integration pre-populates upcoming meetings so the copilot is primed when the call starts.
 
 ### 3. Objection Composer
@@ -320,6 +320,11 @@ bash scripts/setup_env.sh
 
 This interactive script prompts for each value, hides secrets (no echo), and writes `backend/.env` and `extension/.env`. Press Enter to accept any defaults you don't want to override.
 
+> [!NOTE]
+> **You do not hand-edit `extension/manifest.json`.** The committed manifest is a template holding two deliberate placeholders: `oauth2.client_id` and a `your-backend.railway.app` host entry. `vite.config.ts` fills both in at build time from `VITE_GOOGLE_CLIENT_ID` and `VITE_BACKEND_URL`, writing the result to `extension/dist/manifest.json`.
+>
+> A **production** build (`npm run build`) fails loudly if either placeholder is still unresolved, so a bundle with a broken Google sign-in cannot be produced by accident. Only `https` backend URLs contribute a host entry; a `localhost` backend is covered by the dev-only localhost permissions instead.
+
 ### 3. Run the backend
 
 ```bash
@@ -348,12 +353,14 @@ The Project Wingman sidebar will appear when you click the extension icon. Sign 
 ### 5. Verify
 
 ```bash
-# Lint manifest for placeholder strings before any release
-bash scripts/lint-manifest.sh
+# Build a production bundle (fails if manifest placeholders are unresolved)
+cd extension && npm run build && cd ..
 
-# Build a production bundle
-cd extension && npm run build
+# Lint the BUILT manifest before any release
+bash scripts/lint-manifest.sh
 ```
+
+Order matters: the lint reads `extension/dist/manifest.json` when it exists, because the built manifest is what ships. Run it against a `npm run build` output, not a `npm run dev` output. The lint rejects a dev build as a release since dev builds intentionally grant `localhost` host permissions.
 
 ---
 
@@ -366,7 +373,8 @@ cd extension && npm run build
 | `VITE_BACKEND_URL` | FastAPI backend base URL | Yes |
 | `VITE_SUPABASE_URL` | Supabase project URL | Yes |
 | `VITE_SUPABASE_ANON_KEY` | Supabase publishable (anon) key | Yes |
-| `VITE_ALLOWED_DOMAIN` | Google Workspace domain that may sign in | Yes |
+| `VITE_ALLOWED_DOMAIN` | Google Workspace domain that may sign in (blank allows any) | Yes |
+| `VITE_GOOGLE_CLIENT_ID` | Chrome OAuth client ID. **Injected into the built manifest's `oauth2.client_id` at build time.** Google sign-in fails without it | Yes |
 | `VITE_LLM_PROVIDER` | Default provider (`gemini` / `groq` / `anthropic` / `openrouter` / `custom`) | Yes |
 | `VITE_MOCK_MODE` | `true` to short-circuit LLM calls for UI dev | No |
 | `VITE_GEMINI_MODEL` | Override default Gemini model | No |
@@ -423,6 +431,17 @@ If you want auto-start to "just work" from install, have new reps click the Live
 
 ## Development guide
 
+### A note on the name `clientlens`
+
+The project's original working name was **ClientLens**, and that string is still load-bearing in a few places, so you will see it while reading the source:
+
+- `chrome.storage.local` key prefixes (call history, KB vector store, telemetry, admin gate)
+- the feature flag `clientlens_objection_composer_v2`
+- the default Pinecone index name (`PINECONE_INDEX` defaults to `clientlens`)
+- transponder DOM element IDs
+
+It is deliberately **not** renamed. Those storage keys and the index name are persistence identifiers: renaming them would orphan every existing user's call history, KB index, and admin passcode without a migration. If you fork this and want a clean namespace, do the rename and ship a one-time migration that copies the old keys forward before deleting them.
+
 ### Mock mode
 
 Set `VITE_MOCK_MODE=true` to develop the UI without burning LLM credits. All agent calls return canned responses; the meeting copilot uses `mock-stt.ts` instead of streaming to Deepgram.
@@ -467,7 +486,13 @@ The lint script blocks shipping placeholder strings or `<all_urls>` permissions 
 The product handles OAuth tokens, transcripts, and an org-wide KB — security posture matters.
 
 - **No LLM keys in the browser.** All provider keys live in `backend/.env`. The extension calls `/api/v1/llm/*`; the backend proxies. Switching providers is a backend config change, not an extension release.
-- **Manifest scoped** — `host_permissions` and `content_scripts` are narrowly scoped to `docs.google.com`, `notion.so`, and `meet.google.com`. No `<all_urls>` in the shipped manifest. The `lint-manifest.sh` script enforces this.
+- **No `<all_urls>`.** `content_scripts` inject into exactly three origins: `docs.google.com`, `www.notion.so`, and `meet.google.com`. `lint-manifest.sh` enforces the absence of `<all_urls>` in both the template and the built manifest.
+- **`host_permissions` are enumerated, not wildcarded**, but the list is wider than the content-script list because the extension calls these hosts directly. Current groups, and why each is there:
+  - **Product surfaces the content scripts run on:** `docs.google.com`, `slides.google.com`, `www.notion.so`, `meet.google.com`.
+  - **Page-context capture:** `www.linkedin.com` (reads the profile or company page you are pitching into).
+  - **Your own infrastructure:** `*.supabase.co`, plus the backend host injected at build time from `VITE_BACKEND_URL`.
+  - **Services the extension talks to directly:** `api.deepgram.com` and `wss://api.deepgram.com` (live STT), `www.googleapis.com` (Slides, Drive, Calendar), the Zoho API and accounts hosts per data centre.
+  - **Company-logo lookup, purely cosmetic:** `logo.clearbit.com`, `www.google.com` (the `/s2/favicons` endpoint), `icons.duckduckgo.com`. Tried in that order by `shared/utils/brand-assets.ts`. These are the loosest entries and the ones a Chrome Web Store reviewer is most likely to question. Removing them from `manifest.json` degrades gracefully: `fetchBrandAssets` returns `logo_source: "placeholder"` with no logo and a deterministic brand colour derived from the company name, and manual logo upload still works.
 - **Dev-only localhost** — `http://localhost:8000` and `http://localhost:11434` host_permissions are **injected only when `vite build --mode development`** runs. A production build never grants page access to localhost.
 - **FETCH_URL_TEXT hardened** — the background service worker's URL-fetch message handler rejects content-script senders and external extensions, blocking SSRF chains where a visited page could drive the extension to fetch arbitrary URLs (including private localhost) and read back the response.
 - **CRM RBAC** — Zoho `/exchange` and `/refresh` endpoints require the `crm:connect` permission (`ADMIN`, `SALES_REP` only). A viewer-role JWT cannot mint a Zoho access token using the server's `client_secret`.
@@ -495,7 +520,7 @@ The product handles OAuth tokens, transcripts, and an org-wide KB — security p
 | Speech-to-Text | Deepgram Nova-2 (real-time streaming) |
 | Document generation | Google Slides API, Google Drive API |
 | Observability | structlog (backend) |
-| Deployment | Railway / Render / Fly.io (backend), Chrome Web Store or unpacked load (extension) |
+| Deployment | Railway / Render / Fly.io (backend), unpacked load today (extension). A Chrome Web Store listing is planned, not yet published |
 
 ---
 
