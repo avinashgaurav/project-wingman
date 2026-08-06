@@ -406,7 +406,7 @@ Order matters: the lint reads `extension/dist/manifest.json` when it exists, bec
 | `PINECONE_API_KEY` | Pinecone key | If using Pinecone |
 | `PINECONE_INDEX` | Index name (defaults to `clientlens`) | If using Pinecone |
 | `DEEPGRAM_API_KEY` | Deepgram STT key | If using live mode |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth | If using Calendar |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | **Currently unused.** Defined in `config.py` but read by no backend code. Google auth is entirely client-side via `chrome.identity.getAuthToken`, which reads the manifest's `oauth2.client_id` (set `VITE_GOOGLE_CLIENT_ID` instead). Reserved for a future server-side flow | No |
 | `ZOHO_CLIENT_ID` / `ZOHO_CLIENT_SECRET` | Zoho OAuth | If using CRM push |
 | `DEV_MODE` | Must be `true` in v1.0. `AuthMiddleware` then accepts every request as a stub admin. Required because no code path creates a Supabase session. Keep such a backend off the public internet | Yes |
 | `BACKEND_URL` | Self URL (used in OAuth callbacks) | Yes |

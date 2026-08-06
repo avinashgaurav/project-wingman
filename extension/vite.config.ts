@@ -36,15 +36,16 @@ const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "[::1]", ":
  *    one, so we use `hostname`. Emitting `https://host:8443/*` produces a
  *    manifest Chrome refuses to load, which would brick the extension for
  *    anyone whose backend runs on a non-default port.
- *  - https on a loopback host still counts as localhost. Only dev builds may
- *    reach the developer's machine, via DEV_LOCALHOST_HOSTS.
+ *  - https on a loopback host still counts as localhost. Only explicit
+ *    development builds may reach the developer's machine, via
+ *    DEV_LOCALHOST_HOSTS. Any other mode is treated as a release.
  */
 function hostPermissionFor(backendUrl: string, mode: string): string | null {
   try {
     const url = new URL(backendUrl);
     if (url.protocol !== "https:") return null;
     const hostname = url.hostname;
-    if (mode === "production" && LOOPBACK_HOSTS.has(hostname)) return null;
+    if (mode !== "development" && LOOPBACK_HOSTS.has(hostname)) return null;
     return `https://${hostname}/*`;
   } catch {
     return null;
@@ -100,7 +101,12 @@ function copyStaticAssets(mode: string, env: Record<string, string>) {
       // depend on it: the sidebar provisions a local admin user, and Zoho uses
       // launchWebAuthFlow, which builds its own auth URL. So a deployment that
       // does not want Google export is legitimately fine without one.
-      if (mode === "production") {
+      // Anything that is not an explicit development build is treated as a
+      // release for validation purposes. Both npm scripts pin --mode, but a
+      // bare `vite build` or a custom mode string would otherwise skip both the
+      // localhost injection above and this check, silently emitting a manifest
+      // with unresolved placeholders and no error.
+      if (mode !== "development") {
         if (manifest.host_permissions.includes(BACKEND_HOST_PLACEHOLDER)) {
           throw new Error(
             "host_permissions still contains " +

@@ -101,9 +101,13 @@ OPENROUTER_TITLE=Project Wingman
 PINECONE_API_KEY=
 PINECONE_INDEX=clientlens
 
-# ── Google OAuth (needed for Slides/Docs/Drive + Calendar; client secret only
-#    for the server-side flows, leave blank if you are not using them) ──
-GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+# ── Google OAuth (currently UNUSED by the backend) ────────────────────────────
+# These two settings exist in config.py but are read by no backend code. All
+# Google auth is client-side: Slides/Docs/Drive export and Calendar sync call
+# chrome.identity.getAuthToken(), which reads oauth2.client_id from the built
+# manifest (set VITE_GOOGLE_CLIENT_ID in extension/.env instead). Reserved for a
+# future server-side Google flow; leaving them blank changes nothing today.
+GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 
 # ── App ───────────────────────────────────────────────────────────────────────
