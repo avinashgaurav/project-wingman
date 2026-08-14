@@ -273,7 +273,9 @@ export function KnowledgeBasePanel() {
             key={m}
             onClick={() => setMode(m)}
             className={`py-1.5 rounded-md text-[11px] font-medium transition-colors ${
-              mode === m ? "bg-[var(--surface-3)] text-white" : "text-[var(--ink-4)] hover:text-[var(--ink-2)]"
+              mode === m
+                ? "bg-[var(--surface-3)] text-[var(--ink)]"
+                : "text-[var(--ink-4)] hover:text-[var(--ink-2)]"
             }`}
           >
             {m === "text" && "Paste"}
@@ -393,9 +395,9 @@ export function KnowledgeBasePanel() {
               />
             </label>
           </div>
-          <div className="flex items-start gap-1.5 bg-amber-900/20 border border-amber-700/40 rounded px-2 py-1.5">
-            <AlertTriangle size={11} className="text-amber-400 mt-0.5 shrink-0" />
-            <span className="block text-[10px] text-amber-200 leading-snug">
+          <div className="flex items-start gap-1.5 bg-[var(--surface-2)] border border-[var(--signal-warn)] rounded px-2 py-1.5">
+            <AlertTriangle size={11} className="text-[var(--signal-warn)] mt-0.5 shrink-0" />
+            <span className="block text-[10px] text-[var(--ink-3)] leading-snug">
               Backend git indexer is not live yet. Entry will save but agents will skip it until a sync runs.
             </span>
           </div>
@@ -414,7 +416,7 @@ export function KnowledgeBasePanel() {
       )}
 
       {flash && (
-        <div className="flex items-center gap-1.5 text-emerald-400 text-xs">
+        <div className="flex items-center gap-1.5 text-[var(--ink-3)] text-xs">
           <Check size={12} /> {flash}
         </div>
       )}
@@ -429,7 +431,7 @@ export function KnowledgeBasePanel() {
             <button
               onClick={handleReindexAll}
               disabled={busy || entries.length === 0}
-              className="flex items-center gap-1 text-[10px] text-[var(--ink-4)] hover:text-[var(--brand-orange-hover)] disabled:text-[var(--ink-5)] transition-colors"
+              className="flex items-center gap-1 text-[10px] text-[var(--ink-4)] hover:text-[var(--ink)] disabled:text-[var(--ink-5)] transition-colors"
               title="Re-embed any entries that aren't indexed yet"
             >
               <RefreshCw size={10} /> Re-index
@@ -437,7 +439,7 @@ export function KnowledgeBasePanel() {
             <button
               onClick={handleLintWiki}
               disabled={busy || wikiIndex.ready_pages < 2}
-              className="flex items-center gap-1 text-[10px] text-[var(--ink-4)] hover:text-amber-300 disabled:text-[var(--ink-5)] transition-colors"
+              className="flex items-center gap-1 text-[10px] text-[var(--ink-4)] hover:text-[var(--ink)] disabled:text-[var(--ink-5)] transition-colors"
               title="Re-audit the whole wiki for contradictions across pages"
             >
               <Zap size={10} /> Lint wiki
@@ -451,8 +453,8 @@ export function KnowledgeBasePanel() {
           <div className="bg-[var(--surface-2)] border border-[var(--line-2)] rounded-lg p-2 space-y-1.5">
             {wikiIndex.contradictions.length > 0 && (
               <div className="flex items-start gap-1.5">
-                <AlertTriangle size={11} className="text-amber-400 mt-0.5 shrink-0" />
-                <div className="text-[10px] text-amber-200 leading-snug">
+                <AlertTriangle size={11} className="text-[var(--signal-warn)] mt-0.5 shrink-0" />
+                <div className="text-[10px] text-[var(--ink-3)] leading-snug">
                   <span className="font-medium">{wikiIndex.contradictions.length} cross-page contradiction{wikiIndex.contradictions.length === 1 ? "" : "s"}.</span>{" "}
                   {wikiIndex.contradictions.slice(0, 2).map((c, i) => (
                     <span key={i} className="block text-[var(--ink-4)] mt-0.5">
@@ -473,7 +475,7 @@ export function KnowledgeBasePanel() {
                   {wikiIndex.concepts.slice(0, 6).map((c, i) => (
                     <span key={c.name}>
                       {i > 0 ? ", " : ""}
-                      <span className="text-[var(--brand-orange)]">{c.name}</span>
+                      <span className="text-[var(--ink-3)]">{c.name}</span>
                       <span className="text-[var(--ink-4)]"> ({c.entry_ids.length})</span>
                     </span>
                   ))}
@@ -498,7 +500,7 @@ export function KnowledgeBasePanel() {
                   <button
                     onClick={() => hasWiki && toggleExpanded(e.id)}
                     disabled={!hasWiki}
-                    className="shrink-0 mt-0.5 text-[var(--ink-4)] hover:text-[var(--brand-orange-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="shrink-0 mt-0.5 text-[var(--ink-4)] hover:text-[var(--ink)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     aria-label={isOpen ? "Collapse" : "Expand"}
                     title={hasWiki ? (isOpen ? "Collapse wiki" : "Expand wiki") : "Wiki not built yet"}
                   >
@@ -516,7 +518,7 @@ export function KnowledgeBasePanel() {
                       {namespaceLabel(e.namespace)} · {e.uploaded_by_role}
                     </p>
                     {e.status !== "ready" && (
-                      <p className="text-[10px] text-amber-400 flex items-center gap-1 mt-0.5">
+                      <p className="text-[10px] text-[var(--ink-3)] flex items-center gap-1 mt-0.5">
                         <AlertTriangle size={10} /> {e.status_reason || "pending"}
                       </p>
                     )}
@@ -532,7 +534,7 @@ export function KnowledgeBasePanel() {
                       </p>
                     )}
                     {!isOpen && e.wiki_page?.contradictions && e.wiki_page.contradictions.length > 0 && (
-                      <p className="text-[10px] text-amber-300 mt-1 flex items-start gap-1">
+                      <p className="text-[10px] text-[var(--ink-3)] mt-1 flex items-start gap-1">
                         <AlertTriangle size={10} className="mt-0.5 shrink-0" />
                         <span>Conflicts with “{e.wiki_page.contradictions[0].with_entry_name ?? "—"}”: {e.wiki_page.contradictions[0].note}</span>
                       </p>
@@ -540,7 +542,7 @@ export function KnowledgeBasePanel() {
                   </div>
                   <button
                     onClick={() => handleRemove(e.id)}
-                    className="shrink-0 text-[var(--ink-4)] hover:text-red-400 transition-colors"
+                    className="shrink-0 text-[var(--ink-4)] hover:text-[var(--signal-error)] transition-colors"
                     aria-label="Remove"
                   >
                     <Trash2 size={12} />
@@ -562,12 +564,12 @@ function IndexStatusPill({ status, chunks, error }: { status?: KBIndexStatus; ch
     return <span className="text-[var(--ink-4)] flex items-center gap-1"><Sparkles size={9} /> Awaiting index</span>;
   }
   if (status === "indexing") {
-    return <span className="text-[var(--brand-orange)] flex items-center gap-1"><Loader2 size={9} className="animate-spin" /> Indexing…</span>;
+    return <span className="text-[var(--ink-3)] flex items-center gap-1"><Loader2 size={9} className="animate-spin" /> Indexing…</span>;
   }
   if (status === "failed") {
-    return <span className="text-red-400 flex items-center gap-1" title={error}><AlertTriangle size={9} /> Index failed</span>;
+    return <span className="text-[var(--signal-error)] flex items-center gap-1" title={error}><AlertTriangle size={9} /> Index failed</span>;
   }
-  return <span className="text-emerald-400 flex items-center gap-1"><Check size={9} /> Indexed{chunks ? ` · ${chunks} chunk${chunks === 1 ? "" : "s"}` : ""}</span>;
+  return <span className="text-[var(--ink-3)] flex items-center gap-1"><Check size={9} /> Indexed{chunks ? ` · ${chunks} chunk${chunks === 1 ? "" : "s"}` : ""}</span>;
 }
 
 function WikiStatusPill({ status, error }: { status?: WikiBuildStatus; error?: string }) {
@@ -575,23 +577,23 @@ function WikiStatusPill({ status, error }: { status?: WikiBuildStatus; error?: s
     return <span className="text-[var(--ink-4)] flex items-center gap-1"><BookOpen size={9} /> Wiki queued</span>;
   }
   if (status === "building") {
-    return <span className="text-[var(--brand-orange)] flex items-center gap-1"><Loader2 size={9} className="animate-spin" /> Wiki…</span>;
+    return <span className="text-[var(--ink-3)] flex items-center gap-1"><Loader2 size={9} className="animate-spin" /> Wiki…</span>;
   }
   if (status === "failed") {
-    return <span className="text-red-400 flex items-center gap-1" title={error}><AlertTriangle size={9} /> Wiki failed</span>;
+    return <span className="text-[var(--signal-error)] flex items-center gap-1" title={error}><AlertTriangle size={9} /> Wiki failed</span>;
   }
-  return <span className="text-[var(--brand-orange)] flex items-center gap-1"><BookOpen size={9} /> Wiki ready</span>;
+  return <span className="text-[var(--ink-3)] flex items-center gap-1"><BookOpen size={9} /> Wiki ready</span>;
 }
 
 function WikiReader({ page }: { page: WikiPage }) {
   return (
     <div className="mt-2 ml-5 pl-3 border-l border-[var(--line)] space-y-2.5">
       <div className="flex items-center gap-2 text-[10px]">
-        <span className="text-[var(--brand-orange)] font-medium uppercase tracking-wide">{page.type.replace(/_/g, " ")}</span>
+        <span className="text-[var(--ink-3)] font-medium uppercase tracking-wide">{page.type.replace(/_/g, " ")}</span>
         <span className="text-[var(--ink-5)]">·</span>
         <span className={
-          page.confidence === "high" ? "text-emerald-400" :
-          page.confidence === "low" ? "text-amber-400" : "text-[var(--ink-4)]"
+          page.confidence === "high" ? "text-[var(--ink-3)]" :
+          page.confidence === "low" ? "text-[var(--ink-3)]" : "text-[var(--ink-4)]"
         }>{page.confidence} confidence</span>
         {page.generated_at && (
           <>
@@ -615,7 +617,7 @@ function WikiReader({ page }: { page: WikiPage }) {
           <div className="text-[9px] uppercase tracking-wide text-[var(--ink-4)] mb-1">Concepts</div>
           <div className="flex flex-wrap gap-1">
             {page.concepts.map((c) => (
-              <span key={c} className="text-[10px] text-[var(--brand-orange)] bg-[var(--surface-3)] border border-[var(--line)] rounded px-1.5 py-0.5">{c}</span>
+              <span key={c} className="text-[10px] text-[var(--ink-3)] bg-[var(--surface-3)] border border-[var(--line)] rounded px-1.5 py-0.5">{c}</span>
             ))}
           </div>
         </div>
@@ -653,7 +655,7 @@ function WikiReader({ page }: { page: WikiPage }) {
           </div>
           <ul className="space-y-0.5">
             {page.data_gaps.map((g, i) => (
-              <li key={i} className="text-[11px] text-amber-200/90 leading-snug">• {g}</li>
+              <li key={i} className="text-[11px] text-[var(--ink-3)] leading-snug">• {g}</li>
             ))}
           </ul>
         </div>
@@ -661,13 +663,13 @@ function WikiReader({ page }: { page: WikiPage }) {
 
       {page.contradictions.length > 0 && (
         <div>
-          <div className="text-[9px] uppercase tracking-wide text-amber-400 mb-1 flex items-center gap-1">
+          <div className="text-[9px] uppercase tracking-wide text-[var(--ink-3)] mb-1 flex items-center gap-1">
             <AlertTriangle size={9} /> Contradictions ({page.contradictions.length})
           </div>
           <ul className="space-y-1.5">
             {page.contradictions.map((c, i) => (
-              <li key={i} className="text-[11px] text-[var(--ink-3)] bg-amber-900/10 border border-amber-800/30 rounded p-1.5 leading-snug">
-                <div className="text-amber-300 mb-0.5">vs. “{c.with_entry_name ?? c.with_entry_id}”</div>
+              <li key={i} className="text-[11px] text-[var(--ink-3)] bg-[var(--surface-2)] border border-[var(--signal-warn)] rounded p-1.5 leading-snug">
+                <div className="text-[var(--ink-3)] mb-0.5">vs. “{c.with_entry_name ?? c.with_entry_id}”</div>
                 <div className="text-[var(--ink-4)]"><span className="text-[var(--ink-4)]">this:</span> {c.my_claim}</div>
                 <div className="text-[var(--ink-4)]"><span className="text-[var(--ink-4)]">other:</span> {c.their_claim}</div>
                 <div className="text-[var(--ink-3)] mt-0.5 italic">{c.note}</div>

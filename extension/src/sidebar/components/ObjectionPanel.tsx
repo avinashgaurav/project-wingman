@@ -139,7 +139,7 @@ export function ObjectionPanel() {
 
       {objectionInput?.source_url && (
         <div className="flex items-start gap-2 bg-[var(--surface-1)] border border-[var(--line-2)] rounded px-3 py-2">
-          <AlertTriangle size={11} className="text-cyan-400 mt-0.5 shrink-0" />
+          <AlertTriangle size={11} className="text-[var(--signal-info)] mt-0.5 shrink-0" />
           <p className="text-[10px] text-[var(--ink-4)] truncate">
             Captured from: <span className="text-[var(--ink-3)]">{objectionInput.source_title || objectionInput.source_url}</span>
           </p>
@@ -449,7 +449,7 @@ function LegacyObjectionResult({ result, objectionText, copied, onBack, onCopy }
 
       <div className="bg-[var(--surface-3)] border border-[var(--brand-orange)] rounded-xl p-3 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-wide text-[var(--brand-orange)]">Grounded response</span>
+          <span className="text-[10px] uppercase tracking-wide text-[var(--ink-3)]">Grounded response</span>
           <span className="text-[10px] text-[var(--ink-4)]">conf {Math.round(result.confidence * 100)}%</span>
         </div>
         {result.summary && (
