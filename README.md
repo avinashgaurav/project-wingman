@@ -44,7 +44,10 @@ Worth knowing before you invest an evening in it:
 
 ## Quick start
 
-Prerequisites: Node 20+, Python 3.11+ (`brew install python@3.11`), a Supabase project (free tier is fine), and one LLM provider key. Gemini Flash has a generous free tier.
+Prerequisites: Node 20+, Python 3.11+ (`brew install python@3.11`), a Supabase project (free tier is fine), and one LLM provider key.
+
+> [!TIP]
+> **Use a Groq key to start.** It is free, takes a minute, and works from a standing start. Google has restricted every Gemini model this project can call to accounts that had already used them, so a **Gemini key created today returns `404 no longer available to new users` on every request**. Gemini still works if your key predates that change; if it does not, pick Groq or OpenRouter.
 
 ```bash
 git clone https://github.com/avinashgaurav/project-wingman.git

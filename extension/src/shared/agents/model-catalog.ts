@@ -12,25 +12,11 @@ export interface ModelOption {
 export const MODEL_CATALOG: ModelOption[] = [
   // ─── FREE ─────────────────────────────────────────
   {
-    provider: "gemini",
-    model: "gemini-2.0-flash",
-    label: "Gemini 2.0 Flash",
+    provider: "groq",
+    model: "llama-3.3-70b-versatile",
+    label: "Llama 3.3 70B (Groq)",
     tier: "free",
-    note: "Free · 1500/day · fast · recommended",
-  },
-  {
-    provider: "gemini",
-    model: "gemini-2.0-flash-lite",
-    label: "Gemini 2.0 Flash Lite",
-    tier: "free",
-    note: "Free · cheaper, faster, slightly lower quality",
-  },
-  {
-    provider: "gemini",
-    model: "gemini-1.5-flash",
-    label: "Gemini 1.5 Flash",
-    tier: "free",
-    note: "Free · legacy fallback",
+    note: "Free · recommended · 12k TPM · works with a brand-new key",
   },
   {
     provider: "groq",
@@ -39,12 +25,31 @@ export const MODEL_CATALOG: ModelOption[] = [
     tier: "free",
     note: "Free · fastest tokens/sec · light reasoning",
   },
+  // Gemini is listed after Groq deliberately. Google restricted every 1.5 and
+  // 2.0 model to accounts that had already used them, so a key created today
+  // gets 404 "no longer available to new users" on all of them, and the 2.5
+  // names below need a key that predates the change. Groq is the on-ramp that
+  // actually works from a standing start.
   {
-    provider: "groq",
-    model: "llama-3.3-70b-versatile",
-    label: "Llama 3.3 70B (Groq)",
+    provider: "gemini",
+    model: "gemini-2.5-flash",
+    label: "Gemini 2.5 Flash",
     tier: "free",
-    note: "Free · 12k TPM limit · stronger reasoning",
+    note: "Free · fast · needs an existing Gemini key, not a new one",
+  },
+  {
+    provider: "gemini",
+    model: "gemini-2.5-flash-lite",
+    label: "Gemini 2.5 Flash Lite",
+    tier: "free",
+    note: "Free · cheaper and faster · existing Gemini key only",
+  },
+  {
+    provider: "gemini",
+    model: "gemini-2.0-flash",
+    label: "Gemini 2.0 Flash (legacy)",
+    tier: "free",
+    note: "Retired for new keys · keep only if it already works for you",
   },
   {
     provider: "openrouter",
@@ -81,14 +86,14 @@ export const MODEL_CATALOG: ModelOption[] = [
     model: "gemini-2.5-pro",
     label: "Gemini 2.5 Pro",
     tier: "premium",
-    note: "Paid · highest Gemini quality",
+    note: "Paid · highest Gemini quality · existing Gemini key only",
   },
   {
     provider: "gemini",
     model: "gemini-1.5-pro",
-    label: "Gemini 1.5 Pro",
+    label: "Gemini 1.5 Pro (legacy)",
     tier: "premium",
-    note: "Paid · stable, strong long-context",
+    note: "Retired for new keys · existing Gemini key only",
   },
   {
     provider: "anthropic",
