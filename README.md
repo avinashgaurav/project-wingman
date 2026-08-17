@@ -46,8 +46,8 @@ Worth knowing before you invest an evening in it:
 
 Prerequisites: Node 20+, Python 3.11+ (`brew install python@3.11`), a Supabase project (free tier is fine), and one LLM provider key.
 
-> [!TIP]
-> **Use a Groq key to start.** It is free, takes a minute, and works from a standing start. Google has restricted every Gemini model this project can call to accounts that had already used them, so a **Gemini key created today returns `404 no longer available to new users` on every request**. Gemini still works if your key predates that change; if it does not, pick Groq or OpenRouter.
+> [!IMPORTANT]
+> **On a new Gemini key, use `gemini-3.6-flash`.** Google has restricted the 1.5, 2.0 and 2.5 families to accounts that had already used them, so a key created today returns `404 no longer available to new users` on those, and they do not appear in the API's own model list either. `gemini-3.6-flash` works and is the default here. Groq and OpenRouter are the alternatives if you would rather not use Google at all.
 
 ```bash
 git clone https://github.com/avinashgaurav/project-wingman.git

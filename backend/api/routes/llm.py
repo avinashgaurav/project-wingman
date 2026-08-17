@@ -399,7 +399,10 @@ async def _stream_anthropic(req: LLMRequest, user_id: str) -> AsyncIterator[byte
 # allowlist because an existing key still works, and removing them would break
 # deployments that are running fine. New deployments need a 2.5-or-later name.
 _ALLOWED_GEMINI_MODELS: frozenset[str] = frozenset({
-    # Chat / generateContent — current generation, for keys created recently
+    # Chat / generateContent — the only name verified working on a key created
+    # today. Everything below it 404s as "no longer available to new users".
+    "gemini-3.6-flash",
+    # Chat / generateContent — existing keys only
     "gemini-2.5-flash",
     "gemini-2.5-flash-lite",
     "gemini-2.5-pro",

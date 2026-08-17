@@ -12,11 +12,18 @@ export interface ModelOption {
 export const MODEL_CATALOG: ModelOption[] = [
   // ─── FREE ─────────────────────────────────────────
   {
+    provider: "gemini",
+    model: "gemini-3.6-flash",
+    label: "Gemini 3.6 Flash",
+    tier: "free",
+    note: "Free · recommended · the only Gemini model a new key can call",
+  },
+  {
     provider: "groq",
     model: "llama-3.3-70b-versatile",
     label: "Llama 3.3 70B (Groq)",
     tier: "free",
-    note: "Free · recommended · 12k TPM · works with a brand-new key",
+    note: "Free · 12k TPM · alternative if you have no Gemini key",
   },
   {
     provider: "groq",
@@ -25,17 +32,15 @@ export const MODEL_CATALOG: ModelOption[] = [
     tier: "free",
     note: "Free · fastest tokens/sec · light reasoning",
   },
-  // Gemini is listed after Groq deliberately. Google restricted every 1.5 and
-  // 2.0 model to accounts that had already used them, so a key created today
-  // gets 404 "no longer available to new users" on all of them, and the 2.5
-  // names below need a key that predates the change. Groq is the on-ramp that
-  // actually works from a standing start.
+  // Everything below needs a Gemini key that predates Google's cutover. A key
+  // created today 404s on all of them with "no longer available to new users";
+  // only gemini-3.6-flash above works. Kept because older keys still use them.
   {
     provider: "gemini",
     model: "gemini-2.5-flash",
     label: "Gemini 2.5 Flash",
     tier: "free",
-    note: "Free · fast · needs an existing Gemini key, not a new one",
+    note: "Free · fast · existing Gemini key only",
   },
   {
     provider: "gemini",
