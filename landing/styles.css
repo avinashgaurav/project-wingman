@@ -659,13 +659,14 @@ button { font: inherit; cursor: pointer; }
   }
 }
 
-/* ── Product Hunt launch badge ───────────────────────────────────────────────
-   Sits under the hero CTAs. width/height are on the <img> so the row does not
-   reflow while the remote SVG loads. The dark theme variant is deliberate: the
-   hero is #000000. */
-.ph-badge { margin-top: 30px; }
-.ph-badge a { display: inline-block; line-height: 0; }
-.ph-badge img { display: block; width: 250px; height: 54px; }
-@media (max-width: 640px) {
-  .ph-badge { margin-top: 24px; }
+/* ── Product Hunt badge, in the top nav ──────────────────────────────────────
+   Beside the "Open source" pill so it persists at every scroll position and
+   does not compete with the hero CTA. width/height are set on the img and here
+   so the nav does not reflow while the remote SVG loads. Hidden under 900px,
+   where the nav is already tight and the pill has to win. */
+.topnav__right { display: flex; align-items: center; gap: 16px; }
+.ph-badge--nav { display: inline-block; line-height: 0; }
+.ph-badge--nav img { display: block; width: 200px; height: 43px; }
+@media (max-width: 900px) {
+  .ph-badge--nav { display: none; }
 }
