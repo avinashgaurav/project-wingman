@@ -658,3 +658,14 @@ button { font: inherit; cursor: pointer; }
     font-size: 12px;
   }
 }
+
+/* ── Product Hunt launch badge ───────────────────────────────────────────────
+   Sits under the hero CTAs. width/height are on the <img> so the row does not
+   reflow while the remote SVG loads. The dark theme variant is deliberate: the
+   hero is #000000. */
+.ph-badge { margin-top: 30px; }
+.ph-badge a { display: inline-block; line-height: 0; }
+.ph-badge img { display: block; width: 250px; height: 54px; }
+@media (max-width: 640px) {
+  .ph-badge { margin-top: 24px; }
+}
