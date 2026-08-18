@@ -659,14 +659,14 @@ button { font: inherit; cursor: pointer; }
   }
 }
 
-/* ── Product Hunt badge, in the top nav ──────────────────────────────────────
-   Beside the "Open source" pill so it persists at every scroll position and
-   does not compete with the hero CTA. width/height are set on the img and here
-   so the nav does not reflow while the remote SVG loads. Hidden under 900px,
-   where the nav is already tight and the pill has to win. */
-.topnav__right { display: flex; align-items: center; gap: 16px; }
-.ph-badge--nav { display: inline-block; line-height: 0; }
-.ph-badge--nav img { display: block; width: 200px; height: 43px; }
-@media (max-width: 900px) {
-  .ph-badge--nav { display: none; }
+/* ── Product Hunt badge, right corner of the hero CTA row ────────────────────
+   .hero__cta-row is already flex, so margin-left:auto pushes the badge to the
+   container's right edge while keeping it vertically centred on the same line
+   as "Run it yourself" / "See how it works".
+   The row already wraps, so below 720px the badge drops to its own line and the
+   auto margin is cleared, otherwise it would sit right-aligned and orphaned. */
+.ph-badge { margin-left: auto; display: inline-block; line-height: 0; }
+.ph-badge img { display: block; width: 250px; height: 54px; }
+@media (max-width: 720px) {
+  .ph-badge { margin-left: 0; margin-top: 8px; }
 }
