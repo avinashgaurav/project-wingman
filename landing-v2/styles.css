@@ -735,3 +735,9 @@ button { font: inherit; cursor: pointer; }
   color: #F58549; margin-right: 7px; font-weight: 700;
 }
 .see__tab.is-active span { color: rgba(0,0,0,0.55); }
+
+/* The closing CTA's trailing paragraph sat flush against the button row.
+   .cta p carries margin-bottom only, which the FIRST paragraph uses to clear the
+   buttons; the one after them had nothing above it. Same bug exists on the live
+   page. Scoped to last-of-type so the lede above the buttons is unaffected. */
+.cta__inner > p:last-of-type { margin-top: 30px; margin-bottom: 0; }
