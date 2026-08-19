@@ -121,7 +121,7 @@
   </section>
 
   <!-- ────────── FEATURE 1: Live Meeting Copilot (Cursor skin) ────────── -->
-  <section id="features" class="band feature-cursor reveal">
+  <section id="features" class="band feature-cursor">
     <div class="container">
       <div class="feature__grid">
         <div class="feature__copy">
@@ -197,7 +197,7 @@
   </section>
 
   <!-- ────────── FEATURE 2: Pitch generation (Vercel mesh) ────────── -->
-  <section class="band feature-vercel reveal">
+  <section class="band feature-vercel">
     <div class="container">
       <div class="feature__grid">
         <div class="mesh-card">
@@ -225,10 +225,6 @@
           </div>
         </div>
 
-        <figure class="shot shot--inline">
-          <img src="img/pitch-setup.png" alt="Wingman's pitch setup: output format, buyer persona, and live meeting mode." loading="lazy" width="928" height="1560" />
-          <figcaption>Actual screenshot &middot; picking format and persona</figcaption>
-        </figure>
         <div class="feature__copy">
           <div class="eyebrow eyebrow--light" style="margin-bottom:16px;">02 · Pitch generation</div>
           <h2>Pitches grounded in your battle cards, never invented.</h2>
@@ -260,7 +256,7 @@
   </section>
 
   <!-- ────────── FEATURE 3: Post-call insights (Spotify skin) ────────── -->
-  <section class="band feature-spotify reveal">
+  <section class="band feature-spotify">
     <div class="container">
       <div class="feature__grid">
         <div class="feature__copy">
@@ -290,10 +286,71 @@
           </ul>
         </div>
 
-        <figure class="shot">
-          <img src="img/insights-week.png" alt="Wingman's Insights tab: win rate, average sentiment, objections handled, and the week's calls." loading="lazy" width="920" height="1534" />
-          <figcaption>Actual screenshot &middot; Insights, with sample data loaded</figcaption>
-        </figure>
+        <div class="album-grid">
+          <div class="album-tile">
+            <div class="album-tile__art">
+              <span style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.5);color:#1ED760;padding:2px 8px;border-radius:9999px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;">Positive</span>
+              <div>
+                <div style="font-size:16px;font-weight:700;line-height:1.1;">Acme Cloud</div>
+                <div style="font-size:11px;color:#B3B3B3;margin-top:2px;">Priya Patel · VP Sales</div>
+              </div>
+              <div class="album-tile__play">▶</div>
+            </div>
+            <div class="album-tile__bar"><div class="album-tile__bar__fill" style="width:82%;"></div></div>
+            <div class="album-tile__meta">
+              <span>32m</span>
+              <span>Today 14:30</span>
+            </div>
+          </div>
+
+          <div class="album-tile">
+            <div class="album-tile__art">
+              <span style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.5);color:#B3B3B3;padding:2px 8px;border-radius:9999px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;">Neutral</span>
+              <div>
+                <div style="font-size:16px;font-weight:700;line-height:1.1;">Northwind Logistics</div>
+                <div style="font-size:11px;color:#B3B3B3;margin-top:2px;">Marco Silva · CFO</div>
+              </div>
+              <div class="album-tile__play">▶</div>
+            </div>
+            <div class="album-tile__bar"><div class="album-tile__bar__fill" style="width:56%;background:#B3B3B3;"></div></div>
+            <div class="album-tile__meta">
+              <span>28m</span>
+              <span>Yest 11:00</span>
+            </div>
+          </div>
+
+          <div class="album-tile">
+            <div class="album-tile__art">
+              <span style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.5);color:#1ED760;padding:2px 8px;border-radius:9999px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;">Won</span>
+              <div>
+                <div style="font-size:16px;font-weight:700;line-height:1.1;">Quantum Retail</div>
+                <div style="font-size:11px;color:#B3B3B3;margin-top:2px;">Jordan Lee · CTO</div>
+              </div>
+              <div class="album-tile__play">▶</div>
+            </div>
+            <div class="album-tile__bar"><div class="album-tile__bar__fill" style="width:71%;"></div></div>
+            <div class="album-tile__meta">
+              <span>41m</span>
+              <span>Wed 16:15</span>
+            </div>
+          </div>
+
+          <div class="album-tile">
+            <div class="album-tile__art">
+              <span style="position:absolute;top:12px;right:12px;background:rgba(0,0,0,0.5);color:#F3727F;padding:2px 8px;border-radius:9999px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;">Stalled</span>
+              <div>
+                <div style="font-size:16px;font-weight:700;line-height:1.1;">Helios Energy</div>
+                <div style="font-size:11px;color:#B3B3B3;margin-top:2px;">Sam Okafor · RevOps</div>
+              </div>
+              <div class="album-tile__play">▶</div>
+            </div>
+            <div class="album-tile__bar"><div class="album-tile__bar__fill" style="width:32%;background:#F3727F;"></div></div>
+            <div class="album-tile__meta">
+              <span>24m</span>
+              <span>Tue 09:00</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -304,46 +361,44 @@
       <div class="see__head">
         <div class="eyebrow eyebrow--light" style="margin-bottom:16px;">Poke around</div>
         <h2>Every screen, no install.</h2>
-        <p>
-          Real screenshots, not mockups. Click through the tabs the way a rep would.
-        </p>
+        <p>Real screenshots, not mockups. Click through them the way a rep would.</p>
       </div>
 
       <div class="see__tabs" role="tablist" aria-label="Product screens">
-        <button class="see__tab is-active" role="tab" aria-selected="true"  aria-controls="shot-insights"  data-shot="insights">Insights</button>
-        <button class="see__tab"           role="tab" aria-selected="false" aria-controls="shot-knowledge" data-shot="knowledge">Knowledge base</button>
-        <button class="see__tab"           role="tab" aria-selected="false" aria-controls="shot-pitch"     data-shot="pitch">Pitch setup</button>
-        <button class="see__tab"           role="tab" aria-selected="false" aria-controls="shot-calls"     data-shot="calls">Call history</button>
-        <button class="see__tab"           role="tab" aria-selected="false" aria-controls="shot-provider"  data-shot="provider">Your model</button>
+        <button class="see__tab is-active" role="tab" aria-selected="true"  data-shot="insights">Insights</button>
+        <button class="see__tab" role="tab" aria-selected="false" data-shot="knowledge">Knowledge base</button>
+        <button class="see__tab" role="tab" aria-selected="false" data-shot="pitch">Pitch setup</button>
+        <button class="see__tab" role="tab" aria-selected="false" data-shot="calls">Call history</button>
+        <button class="see__tab" role="tab" aria-selected="false" data-shot="provider">Your model</button>
       </div>
 
       <div class="see__stage">
-        <figure class="see__panel is-active" id="shot-insights" role="tabpanel" data-shot="insights">
-          <img src="img/insights-week.png" alt="Insights tab showing win rate, sentiment, objections handled and recent calls." loading="lazy" width="920" height="1534" />
-          <figcaption><strong>Insights.</strong> Win rate, sentiment and objections for the week, per call.</figcaption>
+        <figure class="see__panel is-active" role="tabpanel" data-shot="insights">
+          <img src="img/insights-week.png" alt="Insights: win rate, average sentiment, objections handled, total calls." loading="lazy" width="887" height="695" />
+          <figcaption><strong>Insights.</strong> Win rate, sentiment and objections for the week.</figcaption>
         </figure>
-        <figure class="see__panel" id="shot-knowledge" role="tabpanel" data-shot="knowledge" hidden>
-          <img src="img/knowledge-base.png" alt="Knowledge base with five indexed entries." loading="lazy" width="920" height="1544" />
-          <figcaption><strong>Knowledge base.</strong> Five entries, indexed and chunked. Every citation resolves here.</figcaption>
+        <figure class="see__panel" role="tabpanel" data-shot="knowledge" hidden>
+          <img src="img/knowledge-base.png" alt="Knowledge base: five entries, five of five indexed." loading="lazy" width="864" height="245" />
+          <figcaption><strong>Knowledge base.</strong> Indexed and chunked. Every citation resolves here.</figcaption>
         </figure>
-        <figure class="see__panel" id="shot-pitch" role="tabpanel" data-shot="pitch" hidden>
-          <img src="img/pitch-setup.png" alt="Pitch setup with output format and buyer persona." loading="lazy" width="928" height="1560" />
-          <figcaption><strong>Pitch setup.</strong> Pick a format and a persona. Live meeting mode on.</figcaption>
+        <figure class="see__panel" role="tabpanel" data-shot="pitch" hidden>
+          <img src="img/pitch-setup.png" alt="Pitch setup: live meeting mode on, output format cards." loading="lazy" width="883" height="820" />
+          <figcaption><strong>Pitch setup.</strong> Pick a format and a persona, live mode on.</figcaption>
         </figure>
-        <figure class="see__panel" id="shot-calls" role="tabpanel" data-shot="calls" hidden>
-          <img src="img/call-history.png" alt="Call history table with sentiment and agenda coverage per call." loading="lazy" width="795" height="774" />
-          <figcaption><strong>Call history.</strong> Sortable, with sentiment and agenda coverage per call.</figcaption>
+        <figure class="see__panel" role="tabpanel" data-shot="calls" hidden>
+          <img src="img/call-history.png" alt="Call history: sentiment and agenda coverage per call." loading="lazy" width="795" height="760" />
+          <figcaption><strong>Call history.</strong> Sentiment and agenda coverage, per call.</figcaption>
         </figure>
-        <figure class="see__panel" id="shot-provider" role="tabpanel" data-shot="provider" hidden>
-          <img src="img/provider-picker.png" alt="Quick settings: provider and model picker." loading="lazy" width="928" height="868" />
-          <figcaption><strong>Your model, your key.</strong> Gemini, Groq, OpenRouter or Anthropic. Swap without a redeploy.</figcaption>
+        <figure class="see__panel" role="tabpanel" data-shot="provider" hidden>
+          <img src="img/provider-picker.png" alt="Quick settings: provider and model picker." loading="lazy" width="600" height="600" />
+          <figcaption><strong>Your model, your key.</strong> Gemini, Groq, OpenRouter or Anthropic.</figcaption>
         </figure>
       </div>
     </div>
   </section>
 
   <!-- ────────── HOW IT WORKS (PostHog skin) ────────── -->
-  <section id="how" class="band how reveal">
+  <section id="how" class="band how">
     <div class="container">
       <div class="how__heading">
         <div class="eyebrow eyebrow--light" style="margin-bottom:16px;">From install to first close</div>
@@ -458,13 +513,10 @@
     </div>
   </footer>
   <script>
-    // Tabbed screenshot gallery. Plain DOM, no dependencies, and it degrades to
-    // the first screenshot with JS off because the other panels carry [hidden].
     (function () {
       var tabs = document.querySelectorAll(".see__tab");
       var panels = document.querySelectorAll(".see__panel");
       if (!tabs.length) return;
-
       function show(name) {
         tabs.forEach(function (t) {
           var on = t.dataset.shot === name;
@@ -473,50 +525,32 @@
         });
         panels.forEach(function (p) {
           var on = p.dataset.shot === name;
-          p.hidden = !on;
-          p.classList.toggle("is-active", on);
+          p.hidden = !on; p.classList.toggle("is-active", on);
         });
       }
-
       tabs.forEach(function (t) {
         t.addEventListener("click", function () { show(t.dataset.shot); });
-        // Left/right arrows move between tabs, which is what a screen-reader
-        // user expects from role="tablist".
         t.addEventListener("keydown", function (e) {
           if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
           e.preventDefault();
-          var list = Array.prototype.slice.call(tabs);
-          var i = list.indexOf(t);
-          var next = list[(i + (e.key === "ArrowRight" ? 1 : list.length - 1)) % list.length];
-          next.focus(); show(next.dataset.shot);
+          var l = Array.prototype.slice.call(tabs), i = l.indexOf(t);
+          var n = l[(i + (e.key === "ArrowRight" ? 1 : l.length - 1)) % l.length];
+          n.focus(); show(n.dataset.shot);
         });
       });
     })();
-
-    // Scroll reveal. Sections are marked in markup rather than selected blindly
-    // so the hero never animates: it is the first thing painted.
     (function () {
       var els = document.querySelectorAll(".reveal");
       if (!els.length) return;
-      // Fail open: anything already on screen, or any browser without the
-      // observer, is shown immediately rather than waiting for a scroll event
-      // that may never come.
-      if (!("IntersectionObserver" in window)) {
-        els.forEach(function (el) { el.classList.add("is-in"); });
-        return;
-      }
+      function showAll() { els.forEach(function (e) { e.classList.add("is-in"); }); }
+      if (!("IntersectionObserver" in window)) return showAll();
+      var io = new IntersectionObserver(function (en) {
+        en.forEach(function (x) { if (x.isIntersecting) { x.target.classList.add("is-in"); io.unobserve(x.target); } });
+      }, { rootMargin: "0px 0px -10% 0px", threshold: 0.05 });
+      els.forEach(function (e) { io.observe(e); });
       requestAnimationFrame(function () {
-        els.forEach(function (el) {
-          var r = el.getBoundingClientRect();
-          if (r.top < window.innerHeight) el.classList.add("is-in");
-        });
+        els.forEach(function (e) { if (e.getBoundingClientRect().top < innerHeight) e.classList.add("is-in"); });
       });
-      var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (en) {
-          if (en.isIntersecting) { en.target.classList.add("is-in"); io.unobserve(en.target); }
-        });
-      }, { rootMargin: "0px 0px -12% 0px", threshold: 0.06 });
-      els.forEach(function (el) { io.observe(el); });
     })();
   </script>
 </body>

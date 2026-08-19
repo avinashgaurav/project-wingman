@@ -671,95 +671,59 @@ button { font: inherit; cursor: pointer; }
   .ph-badge { margin-left: 0; margin-top: 8px; }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   v2 additions: real screenshots, a tabbed gallery, and scroll reveals.
-   Tone stays as docs/ux/voice.md sets it: concrete, no filler adjectives. The
-   "fun" is in the interaction, not in louder copy.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* ── real product screenshots ──────────────────────────────────────────────── */
-.shot { margin: 0; }
-.shot img {
-  display: block; width: 100%; height: auto;
-  border: 1px solid rgba(255,255,255,0.10);
-  border-radius: 12px;
-  box-shadow: 0 30px 70px rgba(0,0,0,0.45);
-  transition: transform 260ms ease, box-shadow 260ms ease;
-}
-.shot img:hover { transform: translateY(-4px); box-shadow: 0 40px 90px rgba(0,0,0,0.55); }
-.shot figcaption {
-  margin-top: 12px;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
-  color: rgba(255,255,255,0.42);
-}
-/* Feature 2 sits on a light band, so the caption needs ink not white. */
-.shot--inline figcaption { color: #807D72; }
-.shot--inline img { border-color: rgba(0,0,0,0.10); box-shadow: 0 24px 60px rgba(0,0,0,0.18); }
-
-/* ── "Poke around" tabbed gallery ─────────────────────────────────────────── */
+/* ═══ v2: the one added section. Nothing above this line was changed. ═══
+   Screenshots are capped hard. The raw captures are tall sidebar portraits, and
+   dropping one into a feature column made the section three times its designed
+   height and wrecked the page rhythm. So they live only here, cropped to their
+   informative region and constrained by the stage rather than by their own size. */
 .see { background: #08080A; }
-.see__head { max-width: 620px; margin-bottom: 40px; }
-.see__head h2 {
-  font-size: clamp(30px, 4vw, 46px); font-weight: 800;
-  letter-spacing: -0.02em; color: #fff; margin-bottom: 14px;
-}
-.see__head p { color: rgba(255,255,255,0.58); font-size: 17px; line-height: 1.6; }
+.see__head { max-width: 620px; margin-bottom: 36px; }
+.see__head h2 { font-size: clamp(28px,3.6vw,42px); font-weight: 800; letter-spacing: -0.02em; color: #fff; margin-bottom: 12px; }
+.see__head p { color: rgba(255,255,255,0.56); font-size: 16px; line-height: 1.6; }
 
-.see__tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+.see__tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
 .see__tab {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
-  color: rgba(255,255,255,0.62);
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.10);
-  border-radius: 9999px; padding: 9px 16px; cursor: pointer;
+  color: rgba(255,255,255,0.62); background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10); border-radius: 9999px;
+  padding: 9px 15px; cursor: pointer;
   transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
 }
 .see__tab:hover { color: #fff; background: rgba(255,255,255,0.08); }
-.see__tab.is-active {
-  color: #0A0A0A; background: #F58549; border-color: #F58549; font-weight: 600;
-}
+.see__tab.is-active { color: #0A0A0A; background: #F58549; border-color: #F58549; font-weight: 600; }
 .see__tab:focus-visible { outline: 2px solid #F58549; outline-offset: 3px; }
 
-/* The stage is a fixed-height frame so switching tabs does not jump the page.
-   Screenshots are tall portraits, so they are contained rather than cropped. */
+/* Fixed stage height: switching tabs must never move the page, and no
+   screenshot may dictate the section's size. */
 .see__stage {
-  position: relative; height: 620px;
-  background: #0D0D10;
+  height: 560px; background: #0D0D10;
   border: 1px solid rgba(255,255,255,0.08); border-radius: 14px;
-  padding: 22px; overflow: hidden;
+  padding: 24px; display: flex; align-items: center; justify-content: center;
 }
-.see__panel { margin: 0; height: 100%; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.see__panel { margin: 0; height: 100%; width: 100%; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px; }
 .see__panel[hidden] { display: none; }
 .see__panel img {
-  flex: 1 1 auto; min-height: 0;
-  width: auto; max-width: 100%; height: auto; object-fit: contain;
-  border: 1px solid rgba(255,255,255,0.10); border-radius: 10px;
+  max-width: min(100%, 760px); max-height: 430px; width: auto; height: auto;
+  object-fit: contain; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
 }
-.see__panel figcaption {
-  flex: 0 0 auto; text-align: center;
-  font-size: 14px; color: rgba(255,255,255,0.55); max-width: 620px; line-height: 1.5;
-}
+.see__panel figcaption { text-align: center; font-size: 14px; line-height: 1.5;
+  color: rgba(255,255,255,0.55); max-width: 560px; }
 .see__panel figcaption strong { color: #fff; font-weight: 600; }
-/* Fade the incoming panel so a tab change reads as a change. */
-.see__panel.is-active { animation: shotIn 260ms ease both; }
-@keyframes shotIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.see__panel.is-active { animation: shotIn 240ms ease both; }
+@keyframes shotIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 @media (max-width: 640px) {
-  .see__stage { height: 460px; padding: 14px; }
+  .see__stage { height: 440px; padding: 14px; }
+  .see__panel img { max-height: 300px; }
   .see__tab { font-size: 10px; padding: 8px 12px; }
 }
 
-/* ── scroll reveal ───────────────────────────────────────────────────────────
-   Scoped to .has-js, which an inline script sets on <html> before paint. Without
-   that scope the hidden state is the DEFAULT, so a blocked script or a browser
-   without IntersectionObserver leaves whole sections permanently invisible.
-   Content must never depend on JS to become visible. */
-.has-js .reveal { opacity: 0; transform: translateY(18px); transition: opacity 620ms ease, transform 620ms ease; }
+/* Reveal is scoped to .has-js so content is never hidden when JS is absent. */
+.has-js .reveal { opacity: 0; transform: translateY(16px); transition: opacity 600ms ease, transform 600ms ease; }
 .has-js .reveal.is-in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
-  .reveal, .reveal.is-in { opacity: 1; transform: none; transition: none; }
-  .shot img:hover { transform: none; }
+  .has-js .reveal, .has-js .reveal.is-in { opacity: 1; transform: none; transition: none; }
   .see__panel.is-active { animation: none; }
 }
