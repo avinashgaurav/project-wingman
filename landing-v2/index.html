@@ -355,43 +355,41 @@
     </div>
   </section>
 
-  <!-- ────────── SEE IT (real screenshots, tabbed) ────────── -->
+  <!-- ────────── SEE IT (real screenshots, in the order a rep meets them) ────────── -->
   <section id="see" class="band see reveal">
     <div class="container">
       <div class="see__head">
         <div class="eyebrow eyebrow--light" style="margin-bottom:16px;">Poke around</div>
-        <h2>Every screen, no install.</h2>
-        <p>Real screenshots, not mockups. Click through them the way a rep would.</p>
+        <h2>Every screen, in order.</h2>
+        <p>
+          Real screenshots, not mockups, following the path a rep actually takes:
+          load your material, draft the pitch, take the calls, read the week.
+        </p>
       </div>
 
       <div class="see__tabs" role="tablist" aria-label="Product screens">
-        <button class="see__tab is-active" role="tab" aria-selected="true"  data-shot="insights">Insights</button>
-        <button class="see__tab" role="tab" aria-selected="false" data-shot="knowledge">Knowledge base</button>
-        <button class="see__tab" role="tab" aria-selected="false" data-shot="pitch">Pitch setup</button>
-        <button class="see__tab" role="tab" aria-selected="false" data-shot="calls">Call history</button>
-        <button class="see__tab" role="tab" aria-selected="false" data-shot="provider">Your model</button>
+        <button class="see__tab is-active" role="tab" aria-selected="true"  data-shot="knowledge"><span>01</span> Load your material</button>
+        <button class="see__tab" role="tab" aria-selected="false" data-shot="pitch"><span>02</span> Draft the pitch</button>
+        <button class="see__tab" role="tab" aria-selected="false" data-shot="calls"><span>03</span> Take the calls</button>
+        <button class="see__tab" role="tab" aria-selected="false" data-shot="insights"><span>04</span> Read the week</button>
       </div>
 
       <div class="see__stage">
-        <figure class="see__panel is-active" role="tabpanel" data-shot="insights">
-          <img src="img/insights-week.png" alt="Insights: win rate, average sentiment, objections handled, total calls." loading="lazy" width="887" height="695" />
-          <figcaption><strong>Insights.</strong> Win rate, sentiment and objections for the week.</figcaption>
-        </figure>
-        <figure class="see__panel" role="tabpanel" data-shot="knowledge" hidden>
-          <img src="img/knowledge-base.png" alt="Knowledge base: five entries, five of five indexed." loading="lazy" width="864" height="245" />
-          <figcaption><strong>Knowledge base.</strong> Indexed and chunked. Every citation resolves here.</figcaption>
+        <figure class="see__panel is-active" role="tabpanel" data-shot="knowledge">
+          <img src="img/1-knowledge.png" alt="Knowledge base: five entries, five of five indexed, one case study expanded." loading="lazy" width="1080" height="720" />
+          <figcaption><strong>Load your material.</strong> Case studies and battle cards, indexed and chunked. Every citation later resolves to one of these.</figcaption>
         </figure>
         <figure class="see__panel" role="tabpanel" data-shot="pitch" hidden>
-          <img src="img/pitch-setup.png" alt="Pitch setup: live meeting mode on, output format cards." loading="lazy" width="883" height="820" />
-          <figcaption><strong>Pitch setup.</strong> Pick a format and a persona, live mode on.</figcaption>
+          <img src="img/2-pitch.png" alt="Pitch setup: live meeting mode on, five output formats." loading="lazy" width="1080" height="720" />
+          <figcaption><strong>Draft the pitch.</strong> Pick a format and a buyer persona. Live meeting mode is on for the call itself.</figcaption>
         </figure>
         <figure class="see__panel" role="tabpanel" data-shot="calls" hidden>
-          <img src="img/call-history.png" alt="Call history: sentiment and agenda coverage per call." loading="lazy" width="795" height="760" />
-          <figcaption><strong>Call history.</strong> Sentiment and agenda coverage, per call.</figcaption>
+          <img src="img/3-calls.png" alt="Call history: four calls with sentiment and agenda coverage." loading="lazy" width="1080" height="720" />
+          <figcaption><strong>Take the calls.</strong> Each one lands here with sentiment and how much of the agenda you actually covered.</figcaption>
         </figure>
-        <figure class="see__panel" role="tabpanel" data-shot="provider" hidden>
-          <img src="img/provider-picker.png" alt="Quick settings: provider and model picker." loading="lazy" width="600" height="600" />
-          <figcaption><strong>Your model, your key.</strong> Gemini, Groq, OpenRouter or Anthropic.</figcaption>
+        <figure class="see__panel" role="tabpanel" data-shot="insights" hidden>
+          <img src="img/4-insights.png" alt="Insights: win rate, average sentiment, objections handled, total calls." loading="lazy" width="1080" height="720" />
+          <figcaption><strong>Read the week.</strong> Win rate, sentiment and every objection you handled, without writing a note.</figcaption>
         </figure>
       </div>
     </div>
