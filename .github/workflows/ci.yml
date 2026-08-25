@@ -79,6 +79,13 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      - name: Generate .env files
+        working-directory: .
+        # config.py builds `Settings()` at import time and pydantic requires
+        # SUPABASE_URL and SUPABASE_SERVICE_KEY to be present, so the app cannot
+        # be imported at all without a .env. Placeholder values satisfy that.
+        run: bash scripts/setup_env.sh --non-interactive
+
       - name: Import the app
         # The 3.9 failure mode this guards against was an import-time error, not a
         # dependency resolution error, so installing is not enough to catch it.
