@@ -8,14 +8,30 @@
 # press Enter to accept.
 #
 # Usage:
-#   bash scripts/setup_env.sh
+#   bash scripts/setup_env.sh                    interactive
+#   bash scripts/setup_env.sh --non-interactive  defaults only, secrets left blank
 #
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# With `set -e`, a `read` against a closed stdin aborts the script on the first
+# prompt and writes nothing, which looks like a silent crash. That happens in CI,
+# in Docker builds, and any time this is piped. Detect it up front instead: take
+# the defaults for public values, leave secrets blank, and say what is missing.
+INTERACTIVE=1
+[[ -t 0 ]] || INTERACTIVE=0
+for arg in "$@"; do
+  [[ "$arg" == "--non-interactive" ]] && INTERACTIVE=0
+done
+
 echo "── Project Wingman local .env setup ──"
 echo
+if (( ! INTERACTIVE )); then
+  echo "Running non-interactively: public values get their defaults and every secret"
+  echo "is left blank. Fill the blanks in before starting the backend."
+  echo
+fi
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -23,6 +39,10 @@ ask() {
   # $1 = label, $2 = default value, sets var REPLY
   local label="$1"
   local default="$2"
+  if (( ! INTERACTIVE )); then
+    REPLY="$default"
+    return
+  fi
   if [[ -n "$default" ]]; then
     read -rp "  ${label} [${default}]: " REPLY
     REPLY="${REPLY:-$default}"
@@ -34,6 +54,10 @@ ask() {
 ask_secret() {
   # $1 = label, sets var REPLY (input hidden)
   local label="$1"
+  if (( ! INTERACTIVE )); then
+    REPLY=""
+    return
+  fi
   read -rsp "  ${label} (hidden): " REPLY
   echo
 }
@@ -179,6 +203,15 @@ echo "✓ wrote $EXT_ENV"
 
 echo
 echo "── Done ──"
+if (( ! INTERACTIVE )); then
+  MISSING=()
+  while IFS= read -r line; do
+    [[ "$line" =~ ^([A-Z_]+)=$ ]] && MISSING+=("${BASH_REMATCH[1]}")
+  done < "$BACKEND_ENV"
+  if (( ${#MISSING[@]} )); then
+    echo "  Still blank in backend/.env: ${MISSING[*]}"
+  fi
+fi
 echo "  backend/.env     ${BACKEND_ENV}"
 echo "  extension/.env   ${EXT_ENV}"
 echo
