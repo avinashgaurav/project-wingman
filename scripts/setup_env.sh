@@ -17,10 +17,12 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # With `set -e`, a `read` against a closed stdin aborts the script on the first
 # prompt and writes nothing, which looks like a silent crash. That happens in CI,
-# in Docker builds, and any time this is piped. Detect it up front instead: take
-# the defaults for public values, leave secrets blank, and say what is missing.
+# in Docker builds, and any time stdin is closed.
+#
+# The fix is to handle EOF rather than to stop prompting, so that piping answers
+# in still works: `printf 'a\nb\n' | bash scripts/setup_env.sh`. Only
+# --non-interactive skips the prompts outright and takes every default.
 INTERACTIVE=1
-[[ -t 0 ]] || INTERACTIVE=0
 for arg in "$@"; do
   [[ "$arg" == "--non-interactive" ]] && INTERACTIVE=0
 done
@@ -28,8 +30,8 @@ done
 echo "── Project Wingman local .env setup ──"
 echo
 if (( ! INTERACTIVE )); then
-  echo "Running non-interactively: public values get their defaults and every secret"
-  echo "is left blank. Fill the blanks in before starting the backend."
+  echo "Running with --non-interactive: public values get their defaults and every"
+  echo "secret is left blank. Fill the blanks in before starting the backend."
   echo
 fi
 
@@ -44,10 +46,17 @@ ask() {
     return
   fi
   if [[ -n "$default" ]]; then
-    read -rp "  ${label} [${default}]: " REPLY
+    # `if ! read` keeps `set -e` from killing the script when stdin hits EOF.
+    if ! read -rp "  ${label} [${default}]: " REPLY; then
+      REPLY=""
+      echo
+    fi
     REPLY="${REPLY:-$default}"
   else
-    read -rp "  ${label}: " REPLY
+    if ! read -rp "  ${label}: " REPLY; then
+      REPLY=""
+      echo
+    fi
   fi
 }
 
@@ -58,7 +67,9 @@ ask_secret() {
     REPLY=""
     return
   fi
-  read -rsp "  ${label} (hidden): " REPLY
+  if ! read -rsp "  ${label} (hidden): " REPLY; then
+    REPLY=""
+  fi
   echo
 }
 
@@ -203,7 +214,7 @@ echo "✓ wrote $EXT_ENV"
 
 echo
 echo "── Done ──"
-if (( ! INTERACTIVE )); then
+if true; then
   MISSING=()
   while IFS= read -r line; do
     [[ "$line" =~ ^([A-Z_]+)=$ ]] && MISSING+=("${BASH_REMATCH[1]}")
